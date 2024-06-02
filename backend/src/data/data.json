@@ -1,0 +1,30 @@
+[
+  {
+    "name": "spotify",
+    "category": "Entretenimiento"
+  },
+  {
+    "name": "adeslas",
+    "category": "Seguro"
+  },
+  {
+    "name": "mercadona",
+    "category": "Supermercados"
+  },
+  {
+    "name": "alquiler",
+    "category": "Alquiler"
+  },
+  {
+    "name": "digi",
+    "category": "Teléfono"
+  },
+  {
+    "name": "iberdrola",
+    "category": "Luz"
+  },
+  {
+    "name": "as energy",
+    "category": "Gas"
+  }
+]
