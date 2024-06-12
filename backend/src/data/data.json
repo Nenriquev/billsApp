@@ -26,5 +26,9 @@
   {
     "name": "as energy",
     "category": "Gas"
+  },
+  {
+    "name": "aguas",
+    "category": "Agua"
   }
 ]

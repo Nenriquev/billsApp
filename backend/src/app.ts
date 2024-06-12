@@ -5,6 +5,7 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import dataRouter from "./routes/dataRoutes";
 dotenv.config();
 
 const app = express();
@@ -33,6 +34,6 @@ mongoose
 app.listen(PORT, async () => {
   console.log(`Server is listening on port ${PORT}`);
 });
-
-app.use("/users", userRouter);
-app.use("/sheet", sheetRouter);
+app.use("/api/data", dataRouter);
+app.use("/api/users", userRouter);
+app.use("/api/sheet", sheetRouter);
