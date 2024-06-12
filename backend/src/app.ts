@@ -34,6 +34,9 @@ mongoose
 app.listen(PORT, async () => {
   console.log(`Server is listening on port ${PORT}`);
 });
+
+
+app.get("/", (req, res) => res.send("Server online"));
 app.use("/api/data", dataRouter);
 app.use("/api/users", userRouter);
 app.use("/api/sheet", sheetRouter);
