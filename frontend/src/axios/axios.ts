@@ -1,7 +1,10 @@
 import axios from "axios";
 
+const apiUrl = import.meta.env.VITE_BACKEND_URL;
+
+
 export const axiosFetch = axios.create({
-  baseURL: "http://localhost:3000",
+  baseURL: apiUrl,
   headers: {
     "Content-Type": "application/json",
   },
@@ -9,6 +12,6 @@ export const axiosFetch = axios.create({
 
 
 export const axiosFetchFiles = axios.create({
-  baseURL: "http://localhost:3000",
+  baseURL: apiUrl,
   
 })
