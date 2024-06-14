@@ -12,10 +12,12 @@ export interface DataState {
   data: {
     Agua: { data: dataProps[]; total: number } | null;
     Luz: { data: dataProps[]; total: number } | null;
+    Gas: { data: dataProps[]; total: number } | null;
   };
   loading: {
     Agua: boolean;
     Luz: boolean;
+    Gas: boolean
   };
 }
 
@@ -23,10 +25,12 @@ export const initialState: DataState = {
   data: {
     Agua: null,
     Luz: null,
+    Gas: null
   },
   loading: {
     Agua: true,
     Luz: true,
+    Gas: true
   },
 };
 

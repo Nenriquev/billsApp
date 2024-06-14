@@ -18,7 +18,16 @@ const useData = () => {
     }
   };
 
-  return { getData };
+  const setDate = (date: string): string => {
+    const formatedDate = new Date(date);
+    const options: Intl.DateTimeFormatOptions = {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    };
+    return formatedDate.toLocaleDateString('es-ES', options);  
+}
+  return { getData, setDate };
 };
 
 export default useData;
