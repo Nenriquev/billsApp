@@ -2,11 +2,11 @@ import styled from "styled-components";
 
 export const HomeWrapper = styled.div`
   width: 100%;
-  height: 100%;
   background-color: #f6f6f6fb;
   display: flex;
   flex-direction: column;
   gap: 30px;
+  padding-bottom: 50px;
 
   .grid {
     display: grid;

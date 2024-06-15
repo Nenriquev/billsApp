@@ -7,6 +7,7 @@ const DataSchema = new Schema({
   date: Date,
   value: Number,
   category: String,
+  bank: String
 });
 
 export default mongoose.model("Data", DataSchema, "data");

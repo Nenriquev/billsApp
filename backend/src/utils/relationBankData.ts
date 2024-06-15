@@ -13,7 +13,7 @@ const destructureData = (sheetData: Array<any>, bank: "santander" | "bbva") => {
         const category = categoryEntry ? categoryEntry.category : "Otra categoría";
         const value = Math.abs(transaction["IMPORTE EUR"]);
 
-        return { concept: transaction.CONCEPTO, date: utcDate, value: value, category };
+        return { concept: transaction.CONCEPTO, date: utcDate, value: value, category, bank };
       });
 
     return categorizedTransactions;
@@ -31,7 +31,7 @@ const destructureData = (sheetData: Array<any>, bank: "santander" | "bbva") => {
         const categoryEntry = data.find((entry) => transaction.Concepto.toLowerCase().includes(entry.name));
         const category = categoryEntry ? categoryEntry.category : "Otra categoría";
         const value = Math.abs(transaction.Importe);
-        return { concept: transaction.Concepto, date: resultDate, value: value, category };
+        return { concept: transaction.Concepto, date: resultDate, value: value, category, bank };
       });
 
     return categorizedTransactions;

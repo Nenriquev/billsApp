@@ -5,7 +5,7 @@ import useData from "../hooks/useData";
 
 function BarChart({ data, loading, colors, id }: { data: Array<any>; loading: boolean; colors: string[]; id: string }) {
   const chartRef = useRef(null);
-  const { setDate } = useData();
+  const { formateDate } = useData();
 
   useEffect(() => {
     if (loading) return;
@@ -50,7 +50,7 @@ function BarChart({ data, loading, colors, id }: { data: Array<any>; loading: bo
         },
         formatter: function (params: any) {
           if (params.value > 0) {
-            return `<span>${setDate(params.data.date)}</span></br><b>${params.value.toFixed(2)} €</b>`;
+            return `<span>${formateDate(params.data.date)}</span></br><b>${params.value.toFixed(2)} €</b>`;
           }
           return "";
         },
@@ -89,13 +89,15 @@ function BarChart({ data, loading, colors, id }: { data: Array<any>; loading: bo
   }, [data, loading]);
 
   return (
-    <div id={id} ref={chartRef} className="chart">
+    <>
       {loading && (
         <div id={`loading-${id}`} style={{ width: "100%", height: "100%" }} className="loading">
           <Loader />
         </div>
       )}
-    </div>
+
+      <div id={id} ref={chartRef} className="chart"></div>
+    </>
   );
 }
 

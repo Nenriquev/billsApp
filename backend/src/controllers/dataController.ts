@@ -2,15 +2,34 @@ import { Response, Request } from "express";
 import Data from "../models/Data";
 
 const getData = async (req: Request, res: Response) => {
-  const { category } = req.query;
+  const { category, from, to } = req.query as { category: string; from: string; to: string };
+
+  if (!from || !to) {
+    throw new Error("Both 'from' and 'to' dates must be provided");
+  }
+
+  const fromDate = new Date(from);
+  const toDate = new Date(to);
 
   try {
     const data = await Data.find({
       category,
+      date: {
+        $gte: fromDate,
+        $lte: toDate,
+      },
     });
 
     const total = await Data.aggregate([
-      { $match: { category: category } },
+      {
+        $match: {
+          category: category,
+          date: {
+            $gte: fromDate,
+            $lte: toDate,
+          },
+        },
+      },
       {
         $group: {
           _id: "$category",
