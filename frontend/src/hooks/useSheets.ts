@@ -1,10 +1,11 @@
 
+const apiUrl = import.meta.env.VITE_BACKEND_URL;
 
 export const useSheets = () => {
   const uploadSheet = async (formData: any) => {
     
     try {
-      const response = await fetch("http://localhost:3000/api/sheet/upload", {
+      const response = await fetch(`${apiUrl}/api/sheet/upload`, {
         method: "post",
         body: formData,
       });
