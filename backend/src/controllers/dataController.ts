@@ -1,8 +1,24 @@
 import { Response, Request } from "express";
 import Data from "../models/Data";
 
+const months: string[] = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+];
+
 const getData = async (req: Request, res: Response) => {
   const { category, from, to } = req.query as { category: string; from: string; to: string };
+  let dataset: any = {};
 
   if (!from || !to) {
     throw new Error("Both 'from' and 'to' dates must be provided");
@@ -38,7 +54,122 @@ const getData = async (req: Request, res: Response) => {
       },
     ]);
 
-    return res.status(200).json({ data: data, total: total.length > 0 ? Number(total[0].totalValue.toFixed(2)) : 0 });
+    if (category === "Supermercados" || category === "Seguro" || category === "Otra categoría") {
+      const dimentions: string[] = [];
+      const source: any = [];
+
+      data.forEach((transaction) => {
+        const date = transaction.date && new Date(transaction.date);
+        const month = date && months[date.getMonth()];
+        const concept = transaction.concept || "Sin concepto";
+
+        const existingMonth = source.find((item: any) => item.month === month);
+        if (transaction.concept && !dimentions.includes(transaction.concept)) {
+          dimentions.push(transaction.concept);
+        }
+
+        if (existingMonth) {
+          existingMonth[concept] = (existingMonth[concept] || 0) + transaction.value;
+        } else {
+          const newObj = {
+            month,
+            [concept]: transaction.value,
+          };
+          source.push(newObj);
+        }
+      });
+
+      dataset = {
+        legend: {
+          show: true,
+        },
+        dataset: {
+          dimentions: ["month", ...dimentions],
+          source: source,
+        },
+        series: dimentions.map((item: any) => {
+          if (item !== "month") {
+            return {
+              type: "bar",
+              stack: "total",
+            };
+          }
+        }),
+        xAxis: { type: "category", data: months },
+        yAxis: {
+          type: "value",
+          axisLabel: {
+            formatter: function (value: any) {
+              return `${value.toFixed(0)}€`;
+            },
+          },
+        },
+      };
+    } else {
+      const dimensions: string[] = ["month", "Factura 1"];
+      const source: any[] = [];
+      const series: { type: string; stack: string; name: string }[] = [{ name: "Factura 1", type: "bar", stack: "total" }];
+
+      const monthData: { [month: string]: { [seriesName: string]: number } } = {};
+
+      data.forEach((transaction: any) => {
+        const date = new Date(transaction.date);
+        const month = months[date.getMonth()];
+
+        if (!monthData[month]) {
+          monthData[month] = {};
+        }
+
+        const seriesName = `Factura ${Object.keys(monthData[month]).length + 1}`;
+
+        monthData[month][seriesName] = transaction.value;
+
+        if (!dimensions.includes(seriesName)) {
+          dimensions.push(seriesName);
+          series.push({ name: seriesName, type: "bar", stack: "total" });
+        }
+
+       
+      });
+
+      months.forEach((month) => {
+        if (monthData[month] && Object.keys(monthData[month]).length > 0) {
+          const monthEntry: any = { month };
+
+          dimensions.forEach((dim) => {
+            if (monthData[month][dim]) {
+              monthEntry[dim] = monthData[month][dim];
+            }
+          });
+
+          source.push(monthEntry);
+        }
+      });
+
+      console.log(source, dimensions, series);
+
+      dataset = {
+        legend: {
+          show: true,
+        },
+        dataset: {
+          dimentions: dimensions,
+          source: source,
+        },
+        series: series,
+        xAxis: { type: "category", data: months },
+        yAxis: {
+          type: "value",
+          axisLabel: {
+            formatter: function (value: any) {
+              return `${value.toFixed(0)}€`;
+            },
+          },
+        },
+      };
+    }
+
+    return res.status(200).json({ data: dataset, total: total.length > 0 ? Number(total[0].totalValue.toFixed(2)) : 0 });
   } catch (error) {
     console.log(error);
   }

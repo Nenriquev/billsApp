@@ -1,34 +1,34 @@
 [
   {
-    "name": "spotify",
+    "types": ["spotify"],
     "category": "Entretenimiento"
   },
   {
-    "name": "adeslas",
+    "types": ["adeslas"],
     "category": "Seguro"
   },
   {
-    "name": "mercadona",
+    "types": ["mercadona", "lidl", "aldi", "condis", "carrefour", "Supermercado dia"],
     "category": "Supermercados"
   },
   {
-    "name": "alquiler",
+    "types": ["alquiler"],
     "category": "Alquiler"
   },
   {
-    "name": "digi",
+    "types": ["digi"],
     "category": "Teléfono"
   },
   {
-    "name": "iberdrola",
+    "types": ["iberdrola"],
     "category": "Luz"
   },
   {
-    "name": "as energy",
+    "types": ["as energy"],
     "category": "Gas"
   },
   {
-    "name": "aguas",
+    "types": ["aguas"],
     "category": "Agua"
   }
 ]

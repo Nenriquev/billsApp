@@ -16,6 +16,8 @@ const Home = () => {
   const loading = useSelector((state: RootState) => state.data.loading);
   const dispatch = useDispatch();
 
+  console.log(data);
+
   const handleChange = (e: any) => {
     setDate(e.target.value);
   };
@@ -28,6 +30,7 @@ const Home = () => {
     getData({ category: "Seguro", dates: dates });
     getData({ category: "Teléfono", dates: dates });
     getData({ category: "Supermercados", dates: dates });
+    getData({ category: "Otra categoría", dates: dates });
 
     return () => {
       dispatch(setLoadingData(initialState.loading));
@@ -37,7 +40,6 @@ const Home = () => {
   return (
     <HomeWrapper>
       <h1>HOME</h1>
-      <Link to={"/upload"}>SUBIR ARCHIVO</Link>
 
       <select onChange={handleChange} defaultValue={"default"}>
         <option value={"default"} disabled>

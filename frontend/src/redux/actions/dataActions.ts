@@ -16,7 +16,7 @@ export interface DataState {
     Gas: { data: dataProps[]; total: number } | null;
     Seguro: { data: dataProps[]; total: number } | null;
     Teléfono: { data: dataProps[]; total: number } | null;
-    Supermercados: { data: dataProps[]; total: number } | null;
+    Supermercados: { data: { dimentions: string[]; source: any }; total: number } | null;
   };
   loading: {
     Alquiler: boolean;

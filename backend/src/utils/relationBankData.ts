@@ -9,11 +9,31 @@ const destructureData = (sheetData: Array<any>, bank: "santander" | "bbva") => {
       .map((transaction) => {
         const utcDate = moment.tz(transaction["FECHA OPERACIÓN"], "DD/MM/YYYY", "UTC").toDate();
 
-        const categoryEntry = data.find((entry) => transaction.CONCEPTO.toLowerCase().includes(entry.name));
+        let matchedType: string = "";
+
+        const categoryEntry = data.find((entry) => {
+          return entry.types.some((type) => {
+            if (transaction.CONCEPTO.toLowerCase().includes(type)) {
+              matchedType = type;
+              return true;
+            }
+            return false;
+          });
+        });
         const category = categoryEntry ? categoryEntry.category : "Otra categoría";
         const value = Math.abs(transaction["IMPORTE EUR"]);
 
-        return { concept: transaction.CONCEPTO, date: utcDate, value: value, category, bank };
+        const element = {
+          concept: transaction.CONCEPTO,
+          date: utcDate,
+          value: value,
+          category,
+          bank,
+        };
+        if (matchedType) element.concept = matchedType.charAt(0).toUpperCase() + matchedType.slice(1);
+        if (category === "Seguro") element.concept = "Adeslas Neru";
+
+        return element;
       });
 
     return categorizedTransactions;
@@ -24,14 +44,35 @@ const destructureData = (sheetData: Array<any>, bank: "santander" | "bbva") => {
       .filter((transaction) => transaction.Importe < 0)
       .map((transaction) => {
         const baseDate = new Date(Date.UTC(1900, 0, 1));
-        const days = Math.floor(transaction.Fecha);
-        const resultDate = addDays(baseDate, days);
+        const days = Math.floor(transaction.Fecha) - 2;
+        const resultDate = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000);
         resultDate.setUTCHours(0, 0, 0, 0);
+        let matchedType: string = "";
 
-        const categoryEntry = data.find((entry) => transaction.Concepto.toLowerCase().includes(entry.name));
+        const categoryEntry = data.find((entry) => {
+          return entry.types.some((type) => {
+            if (transaction.Concepto.toLowerCase().includes(type)) {
+              matchedType = type === "Supermercado dia" ? "Dia" : type;
+              return true;
+            }
+            return false;
+          });
+        });
         const category = categoryEntry ? categoryEntry.category : "Otra categoría";
         const value = Math.abs(transaction.Importe);
-        return { concept: transaction.Concepto, date: resultDate, value: value, category, bank };
+
+        const element = {
+          concept: transaction.Concepto,
+          date: resultDate,
+          value: value,
+          category,
+          bank,
+        };
+
+        if (matchedType) element.concept = matchedType.charAt(0).toUpperCase() + matchedType.slice(1);
+        if (category === "Seguro") element.concept = "Adeslas Uriel";
+
+        return element;
       });
 
     return categorizedTransactions;

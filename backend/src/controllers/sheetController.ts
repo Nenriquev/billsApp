@@ -8,6 +8,7 @@ interface DataProps {
   value: number;
   category: string;
   date: Date;
+  bank: string;
 }
 
 const readSheet = async (req: Request, res: Response) => {
@@ -41,7 +42,7 @@ const readSheet = async (req: Request, res: Response) => {
 const saveDataInDb = async (data: DataProps[]) => {
   try {
     for (const element of data) {
-      await Data.findOneAndUpdate({ concept: element.concept, date: element.date, value: element.value }, element, {
+      await Data.findOneAndUpdate({ bank: element.bank, date: element.date, value: element.value }, element, {
         upsert: true,
       });
     }
