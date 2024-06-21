@@ -128,8 +128,6 @@ const getData = async (req: Request, res: Response) => {
           dimensions.push(seriesName);
           series.push({ name: seriesName, type: "bar", stack: "total" });
         }
-
-       
       });
 
       months.forEach((month) => {
@@ -137,16 +135,16 @@ const getData = async (req: Request, res: Response) => {
           const monthEntry: any = { month };
 
           dimensions.forEach((dim) => {
-            if (monthData[month][dim]) {
+            if (monthData[month][dim] && dim !== "month") {
               monthEntry[dim] = monthData[month][dim];
+            } else if (dim !== "month") {
+              monthEntry[dim] = null;
             }
           });
 
           source.push(monthEntry);
         }
       });
-
-      console.log(source, dimensions, series);
 
       dataset = {
         legend: {
