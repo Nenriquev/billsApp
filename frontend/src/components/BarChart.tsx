@@ -6,12 +6,10 @@ import useData from "../hooks/useData";
 function BarChart({
   data,
   loading,
-  colors,
   id,
 }: {
   data: { dimentions: string[]; source: any } | Array<any>;
   loading: boolean;
-  colors: string[];
   id: string;
 }) {
   const chartRef = useRef(null);

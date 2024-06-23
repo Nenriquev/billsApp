@@ -15,6 +15,10 @@ export const HomeWrapper = styled.div`
     padding: 0 50px;
   }
 
+  .drop {
+    width: 200px;
+  }
+
   .card {
     position: relative;
     display: flex;

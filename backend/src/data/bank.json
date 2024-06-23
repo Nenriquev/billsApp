@@ -1,0 +1,10 @@
+[
+  {
+    "bank": "bbva",
+    "headers": ["Fecha", "F.Valor", "Concepto", "Movimiento", "Importe", "Divisa", "Observaciones"]
+  },
+  {
+    "bank": "santander",
+    "headers": ["FECHA OPERACIÓN", "FECHA VALOR", "CONCEPTO", "IMPORTE EUR", "SALDO"]
+  }
+]

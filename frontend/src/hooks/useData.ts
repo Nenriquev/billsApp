@@ -9,7 +9,7 @@ const useData = () => {
     dispatch(setLoadingData({ [category as string]: true }));
     try {
       const data: any = await axiosFetch.get(`/api/data?category=${category}`, {
-        params: dates
+        params: dates,
       });
 
       if (data.status === 200) dispatch(setData({ [category as string]: data.data }));
@@ -41,7 +41,14 @@ const useData = () => {
     };
     return formatedDate.toLocaleDateString("es-ES", options);
   };
-  return { getData, formateDate, setDate };
+
+  const extractYear = (date: string): string | number | undefined => {
+    const fecha = new Date(date);
+    const year = fecha.getUTCFullYear();
+    return year;
+  };
+
+  return { getData, formateDate, setDate, extractYear };
 };
 
 export default useData;

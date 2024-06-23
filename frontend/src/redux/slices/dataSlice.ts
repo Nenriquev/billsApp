@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { initialState, setDataAction, setDatesAction, setLoadingDataAction } from "../actions/dataActions";
+import { initialState, setDataAction, setDatesAction, setErrorsAction, setLoadingDataAction } from "../actions/dataActions";
 
 export const dataSlice = createSlice({
   name: "data",
@@ -7,10 +7,11 @@ export const dataSlice = createSlice({
   reducers: {
     setData: setDataAction,
     setLoadingData: setLoadingDataAction,
-    setDates: setDatesAction
+    setDates: setDatesAction,
+    setErrors: setErrorsAction
   },
 });
 
-export const { setData, setLoadingData, setDates } = dataSlice.actions;
+export const { setData, setLoadingData, setDates, setErrors } = dataSlice.actions;
 
 export const dataReducer = dataSlice.reducer;

@@ -31,6 +31,9 @@ export interface DataState {
     from: string;
     to: string;
   };
+  errors: {
+    uploadSheet: string | null
+  }
 }
 
 export const initialState: DataState = {
@@ -56,6 +59,9 @@ export const initialState: DataState = {
     from: new Date(new Date().getFullYear(), 0, 1).toISOString(),
     to: new Date(new Date().getFullYear(), 11, 31).toISOString(),
   },
+  errors: {
+    uploadSheet: null
+  }
 };
 
 const setDataAction = (state: DataState, action: PayloadAction<any>) => {
@@ -70,4 +76,8 @@ const setDatesAction = (state: DataState, action: PayloadAction<{ from: string; 
   state.dates = action.payload;
 };
 
-export { setDataAction, setLoadingDataAction, setDatesAction };
+const setErrorsAction = (state: DataState, action: PayloadAction<any>) => {
+  state.errors = {...state.errors, ...action.payload}
+};
+
+export { setDataAction, setLoadingDataAction, setDatesAction, setErrorsAction };
