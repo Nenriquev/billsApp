@@ -13,8 +13,8 @@ const destructureData = (sheetData: Array<any>, bank: "santander" | "bbva") => {
 
         const categoryEntry = data.find((entry) => {
           return entry.types.some((type) => {
-            if (transaction.CONCEPTO.toLowerCase().includes(type)) {
-              matchedType = type;
+            if (transaction.CONCEPTO.toLowerCase().includes(type.entry)) {
+              matchedType = type.name;
               return true;
             }
             return false;
@@ -51,8 +51,8 @@ const destructureData = (sheetData: Array<any>, bank: "santander" | "bbva") => {
 
         const categoryEntry = data.find((entry) => {
           return entry.types.some((type) => {
-            if (transaction.Concepto.toLowerCase().includes(type)) {
-              matchedType = type === "Supermercado dia" ? "Dia" : type;
+            if (transaction.Concepto.toLowerCase().includes(type.entry)) {
+              matchedType = type.name;
               return true;
             }
             return false;

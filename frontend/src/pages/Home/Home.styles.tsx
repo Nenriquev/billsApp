@@ -5,18 +5,34 @@ export const HomeWrapper = styled.div`
   background-color: #f6f6f6fb;
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 15px;
   padding-bottom: 50px;
 
   .grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 50px; 
+    gap: 50px;
     padding: 0 50px;
   }
 
-  .drop {
-    width: 200px;
+  .row {
+    padding: 0 50px;
+  }
+
+  .navbar {
+    padding: 10px 50px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    .utils {
+      display: flex;
+      .drop {
+        display: flex;
+        margin-left: auto;
+        width: 200px;
+      }
+    }
   }
 
   .card {

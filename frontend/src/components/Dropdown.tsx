@@ -1,3 +1,5 @@
+import { IconChevronDown } from "@tabler/icons-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 
@@ -16,6 +18,18 @@ const DropdownWrapper = styled.div`
   display: flex;
   align-items: center;
   cursor: pointer;
+  background-color: white;
+
+  .arrow {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    padding-right: 5px;
+
+    svg {
+      stroke-width: 1;
+    }
+  }
 
   .label {
     padding: 10px;
@@ -68,16 +82,21 @@ const Dropdown = ({ options, handleSelect, selectedOption }: DropdownProps) => {
   return (
     <DropdownWrapper ref={dropdownRef} onClick={() => setOpenDropdown(!openDropdown)}>
       <span className="label">{selectedOption || "Selecciona una opción"}</span>
+      <div className="arrow">
+        <IconChevronDown />
+      </div>
 
-      {openDropdown && (
-        <div className="dropdown">
-          {options.map((option) => (
-            <span key={option.value} onClick={() => handleSelect(option)}>
-              {option.name}
-            </span>
-          ))}
-        </div>
-      )}
+      <AnimatePresence>
+        {openDropdown && (
+          <motion.div className="dropdown" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            {options.map((option) => (
+              <span key={option.value} onClick={() => handleSelect(option)}>
+                {option.name}
+              </span>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </DropdownWrapper>
   );
 };

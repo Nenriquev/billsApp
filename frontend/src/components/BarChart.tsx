@@ -3,15 +3,7 @@ import * as echarts from "echarts";
 import Loader from "./Loader";
 import useData from "../hooks/useData";
 
-function BarChart({
-  data,
-  loading,
-  id,
-}: {
-  data: { dimentions: string[]; source: any } | Array<any>;
-  loading: boolean;
-  id: string;
-}) {
+function BarChart({ data, loading, id }: { data: { dimentions: string[]; source: any } | Array<any>; loading: boolean; id: string }) {
   const chartRef = useRef(null);
   const { formateDate } = useData();
 
@@ -31,7 +23,6 @@ function BarChart({
       },
       tooltip: {
         formatter: function (value: any) {
-          console.log(value)
           const serie = value.seriesName;
           return `<span>${serie}</span></br>
           <b>${value.data[serie]} €</b>`;
@@ -39,7 +30,6 @@ function BarChart({
       },
       ...data,
     };
-
 
     myChart.setOption(option);
 

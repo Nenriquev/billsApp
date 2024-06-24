@@ -17,6 +17,7 @@ export interface DataState {
     Seguro: { data: dataProps[]; total: number } | null;
     Teléfono: { data: dataProps[]; total: number } | null;
     Supermercados: { data: { dimentions: string[]; source: any }; total: number } | null;
+    Otros: { data: { dimentions: string[]; source: any }; total: number } | null;
   };
   loading: {
     Alquiler: boolean;
@@ -26,6 +27,7 @@ export interface DataState {
     Seguro: boolean;
     Teléfono: boolean;
     Supermercados: boolean;
+    Otros: boolean
   };
   dates: {
     from: string;
@@ -45,6 +47,7 @@ export const initialState: DataState = {
     Seguro: null,
     Teléfono: null,
     Supermercados: null,
+    Otros: null
   },
   loading: {
     Alquiler: true,
@@ -54,6 +57,7 @@ export const initialState: DataState = {
     Seguro: true,
     Teléfono: true,
     Supermercados: true,
+    Otros: true
   },
   dates: {
     from: new Date(new Date().getFullYear(), 0, 1).toISOString(),

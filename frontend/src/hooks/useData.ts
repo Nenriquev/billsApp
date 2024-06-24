@@ -6,9 +6,11 @@ const useData = () => {
   const dispatch = useDispatch();
 
   const getData = async ({ category, dates }: { category: string; dates: { from: string; to: string } }) => {
+    category === "Otra categoría" ? (category = "Otros") : category;
+
     dispatch(setLoadingData({ [category as string]: true }));
     try {
-      const data: any = await axiosFetch.get(`/api/data?category=${category}`, {
+      const data: any = await axiosFetch.get(`/api/data?category=${category === "Otros" ? "Otra categoría" : category}`, {
         params: dates,
       });
 

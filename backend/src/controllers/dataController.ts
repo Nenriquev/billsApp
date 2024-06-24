@@ -54,28 +54,45 @@ const getData = async (req: Request, res: Response) => {
       },
     ]);
 
-    if (category === "Supermercados" || category === "Seguro" || category === "Otra categoría") {
+    if (category === "Supermercados" || category === "Seguro") {
       const dimentions: string[] = [];
       const source: any = [];
+      const monthData: { [month: string]: { [seriesName: string]: number } } = {};
 
-      data.forEach((transaction) => {
-        const date = transaction.date && new Date(transaction.date);
-        const month = date && months[date.getMonth()];
-        const concept = transaction.concept || "Sin concepto";
+      data.forEach((transaction: any) => {
+        const date = new Date(transaction.date);
+        const month = months[date.getMonth()];
 
-        const existingMonth = source.find((item: any) => item.month === month);
-        if (transaction.concept && !dimentions.includes(transaction.concept)) {
-          dimentions.push(transaction.concept);
+        if (!monthData[month]) {
+          monthData[month] = {};
         }
 
-        if (existingMonth) {
-          existingMonth[concept] = (existingMonth[concept] || 0) + transaction.value;
+        const seriesName = transaction.concept;
+
+        if (monthData[month][seriesName]) {
+          monthData[month][seriesName] = monthData[month][seriesName] + transaction.value;
         } else {
-          const newObj = {
-            month,
-            [concept]: transaction.value,
-          };
-          source.push(newObj);
+          monthData[month][seriesName] = transaction.value;
+        }
+
+        if (!dimentions.includes(seriesName)) {
+          dimentions.push(seriesName);
+        }
+      });
+
+      months.forEach((month) => {
+        if (monthData[month] && Object.keys(monthData[month]).length > 0) {
+          const monthEntry: any = { month };
+
+          dimentions.forEach((dim) => {
+            if (monthData[month][dim] && dim !== "month") {
+              monthEntry[dim] = monthData[month][dim];
+            } else if (dim !== "month") {
+              monthEntry[dim] = null;
+            }
+          });
+
+          source.push(monthEntry);
         }
       });
 
@@ -104,6 +121,77 @@ const getData = async (req: Request, res: Response) => {
             },
           },
         },
+      };
+    } else if (category === "Otra categoría") {
+      const groupedData = data.reduce((acc, transaction) => {
+        const { concept, value } = transaction;
+        if (!acc[concept as string]) {
+          acc[concept as string] = 0;
+        }
+        acc[concept as string] += value ?? 0;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const concepts = Object.keys(groupedData);
+
+      const colors = ["#5470C6", "#91CC75", "#EE6666", "#FAC858", "#73C0DE", "#3BA272", "#FC8452", "#9A60B4", "#EA7CCC"];
+
+      const seriesData = concepts.map((concept, index) => ({
+        name: concept,
+        value: groupedData[concept],
+        itemStyle: {
+          color: colors[index % colors.length],
+        },
+      }));
+
+      console.log(concepts)
+
+      dataset = {
+        legend: {
+          show: true,
+          type: "scroll",
+          orient: "horizontal",
+          top: 10,
+          data: concepts,
+        },
+        xAxis: {
+          type: "category",
+          data: concepts,
+        },
+        yAxis: {
+          type: "value",
+          axisLabel: {
+            formatter: function (value: number) {
+              return `${value.toFixed(0)}€`;
+            },
+          },
+        },
+        tooltip: {
+          trigger: "axis",
+          axisPointer: {
+            type: "shadow",
+          },
+          formatter: function (params: any) {
+            const tooltipItems = params.map((param: any) => {
+              return `${param.seriesName}: ${param.value}€`;
+            });
+            return tooltipItems.join("<br/>");
+          },
+        },
+        dataZoom: [
+          {
+            type: "slider",
+            show: true,
+            start: 0,
+            end: 100,
+          },
+        ],
+        series: [
+          {
+            type: "bar",
+            data: seriesData,
+          },
+        ],
       };
     } else {
       const dimensions: string[] = ["month", "Factura 1"];

@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { HomeWrapper } from "./Home.styles";
 import BarChart from "../../components/BarChart";
 import { useEffect } from "react";
@@ -51,12 +50,20 @@ const Home = () => {
     };
   }, [dates]);
 
+  console.log(data)
+  
+
   return (
     <HomeWrapper>
-      <h1>HOME</h1>
-
-      <div className="drop">
-        <Dropdown options={options} handleSelect={handleChange} selectedOption={extractYear(dates?.to)} />
+      <div className="navbar">
+        <div className="title">
+          <h1>Estadisticas</h1>
+        </div>
+        <div className="utils">
+          <div className="drop">
+            <Dropdown options={options} handleSelect={handleChange} selectedOption={extractYear(dates?.to)} />
+          </div>
+        </div>
       </div>
 
       <div className="grid">
@@ -116,6 +123,15 @@ const Home = () => {
             {data.Teléfono?.total && <CountUp end={data.Teléfono.total} duration={1} decimals={2} suffix=" €" className="total" />}
           </div>
           <BarChart data={data?.Teléfono?.data || []} loading={loading.Teléfono} id="telefono" />
+        </div>
+      </div>
+      <div className="row">
+        <div className="card">
+          <div className="head">
+            <h1>Otras categorias</h1>
+            {data.Otros?.total && <CountUp end={data?.Otros.total} duration={1} decimals={2} suffix=" €" className="total" />}
+          </div>
+          <BarChart data={data?.Otros?.data || []} loading={loading.Otros} id="otros" />
         </div>
       </div>
     </HomeWrapper>
