@@ -60,6 +60,8 @@ interface TableProps {
 const VirtualizedTable: React.FC<TableProps> = ({ data, columns, onRowClick }) => {
   const [filter, setFilter] = useState<string>("");
 
+ console.log(data, columns)
+
   const filteredData = useMemo(() => {
     return data.filter((item) => Object.values(item).some((val) => String(val).toLowerCase().includes(filter.toLowerCase())));
   }, [filter, data]);

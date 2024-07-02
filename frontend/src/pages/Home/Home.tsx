@@ -50,8 +50,6 @@ const Home = () => {
     };
   }, [dates]);
 
-  console.log(data);
-
   return (
     <HomeWrapper>
       <div className="navbar">
