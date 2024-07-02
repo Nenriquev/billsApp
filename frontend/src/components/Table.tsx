@@ -65,7 +65,7 @@ const VirtualizedTable: React.FC<TableProps> = ({ data, columns, onRowClick }) =
 
   const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({
     columns,
-    data: filteredData,
+    data: data,
   });
 
   const RenderRow = ({ index, style }: { index: number; style: any }) => {

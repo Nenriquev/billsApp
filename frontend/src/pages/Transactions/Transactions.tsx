@@ -24,7 +24,9 @@ const Transactions = () => {
     getData({});
   }, []);
 
- 
+  if (loading) {
+    return <Loader />;
+  }
 
   return <VirtualizedTable data={data || []} columns={columns} onRowClick={(e) => console.log(e)} />;
 };
