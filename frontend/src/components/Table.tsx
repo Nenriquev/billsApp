@@ -21,7 +21,6 @@ const TableWrapper = styled.div`
     cursor: pointer;
     transition: 0.3s;
     border: none;
-    
 
     &:hover {
       background-color: #c1dfff;
@@ -60,23 +59,18 @@ interface TableProps {
 const VirtualizedTable: React.FC<TableProps> = ({ data, columns, onRowClick }) => {
   const [filter, setFilter] = useState<string>("");
 
-
   const filteredData = useMemo(() => {
     return data.filter((item) => Object.values(item).some((val) => String(val).toLowerCase().includes(filter.toLowerCase())));
   }, [filter, data]);
 
   const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({
     columns,
-    data: data,
+    data,
   });
-
-  console.log(data)
-  console.log(rows)
-  
 
   const RenderRow = ({ index, style }: { index: number; style: any }) => {
     const row = rows[index];
-    console.log(row)
+    console.log(row.values);
     prepareRow(row);
     return (
       <div {...row.getRowProps({ style })} className="tr" onClick={() => onRowClick && onRowClick(row?.original)}>
@@ -94,10 +88,8 @@ const VirtualizedTable: React.FC<TableProps> = ({ data, columns, onRowClick }) =
       <div {...getTableProps()} className="table">
         <div className="header">
           {headerGroups.map((headerGroup) => (
-            console.log(headerGroup),
             <div {...headerGroup.getHeaderGroupProps()} className="tr">
               {headerGroup.headers.map((column) => (
-                console.log(column),
                 <div {...column.getHeaderProps()} className="th" style={{ width: `${column.width}%` }}>
                   {column.render("Header")}
                 </div>
