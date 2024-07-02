@@ -16,7 +16,17 @@ const months: string[] = [
   "Diciembre",
 ];
 
-const getData = async (req: Request, res: Response) => {
+const getData = async ({ req, res }: { req: Request; res: Response }) => {
+  try {
+    const data = await Data.find({}).sort({date: -1});
+
+    return res.status(200).json(data);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const getAnalyticData = async (req: Request, res: Response) => {
   const { category, from, to } = req.query as { category: string; from: string; to: string };
   let dataset: any = {};
 
@@ -144,8 +154,6 @@ const getData = async (req: Request, res: Response) => {
         },
       }));
 
-      console.log(concepts)
-
       dataset = {
         legend: {
           show: true,
@@ -261,4 +269,4 @@ const getData = async (req: Request, res: Response) => {
   }
 };
 
-export { getData };
+export { getAnalyticData, getData };

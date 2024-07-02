@@ -15,6 +15,7 @@
       { "entry": "condis", "name": "Condis" },
       { "entry": "carref", "name": "Carrefour" },
       { "entry": "Supermercado dia", "name": "Dia" },
+      { "entry": "Dia", "name": "Dia" },
       { "entry": "sirena", "name": "La Sirena" },
       { "entry": "fruteria", "name": "Fruteria" }
     ],

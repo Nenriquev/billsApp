@@ -4,6 +4,7 @@ import Upload from "./pages/Upload/Upload";
 import SideBar from "./components/SideBar";
 import styled from "styled-components";
 import Transactions from "./pages/Transactions/Transactions";
+import Toast from "./components/Toast";
 
 const MainWrapper = styled.div`
   width: calc(100% - 70px);
@@ -25,6 +26,7 @@ function App() {
           <Route path="*" element={<h1>Not found</h1>} />
         </Routes>
       </MainWrapper>
+      <Toast />
     </>
   );
 }

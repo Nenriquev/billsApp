@@ -60,8 +60,8 @@ const SideBar = () => {
   return (
     <SideBarWrapper>
       <div className="links">
-        {elements.map((item) => (
-          <Tooltip position="left" text={item.name}>
+        {elements.map((item, key: number) => (
+          <Tooltip position="left" text={item.name} key={key}>
             <Link to={item.link}>{item.icon}</Link>
           </Tooltip>
         ))}

@@ -1,9 +1,10 @@
 import { ChangeEvent, useState } from "react";
 import { UploadPageWrapper } from "./Upload.styles";
 import { useSheets } from "../../hooks/useSheets";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
 import Dropdown from "../../components/Dropdown";
+import { setToast } from "../../redux/slices/appSlice";
 
 const options = [
   {
@@ -21,6 +22,9 @@ const Upload = () => {
   const [option, setOption] = useState<{ name: string; value: string } | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const errors = useSelector((state: RootState) => state.data.errors);
+  const dispatch = useDispatch()
+
+  dispatch(setToast({open: true, msg: 'test', type: 'success'}))
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

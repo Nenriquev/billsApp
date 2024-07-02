@@ -1,20 +1,35 @@
 import { useDispatch } from "react-redux";
 import { axiosFetch } from "../axios/axios";
-import { setData, setDates, setLoadingData } from "../redux/slices/dataSlice";
+import { setAnalyticData, setData, setDates, setLoadingData } from "../redux/slices/dataSlice";
 
 const useData = () => {
   const dispatch = useDispatch();
 
-  const getData = async ({ category, dates }: { category: string; dates: { from: string; to: string } }) => {
+  const getData = async ({ dates }: { dates?: { from: string; to: string } }) => {
+    dispatch(setLoadingData({ data: true }));
+    try {
+      const data: any = await axiosFetch.get(`/api/data`, {
+        params: dates,
+      });
+
+      if (data.status === 200) dispatch(setData(data?.data));
+    } catch (error) {
+      console.log(error);
+    } finally {
+      dispatch(setLoadingData({ data: false }));
+    }
+  };
+
+  const getAnalyticData = async ({ category, dates }: { category: string; dates: { from: string; to: string } }) => {
     category === "Otra categoría" ? (category = "Otros") : category;
 
     dispatch(setLoadingData({ [category as string]: true }));
     try {
-      const data: any = await axiosFetch.get(`/api/data?category=${category === "Otros" ? "Otra categoría" : category}`, {
+      const data: any = await axiosFetch.get(`/api/data/analytics?category=${category === "Otros" ? "Otra categoría" : category}`, {
         params: dates,
       });
 
-      if (data.status === 200) dispatch(setData({ [category as string]: data.data }));
+      if (data.status === 200) dispatch(setAnalyticData({ [category as string]: data.data }));
     } catch (error) {
       console.log(error);
     } finally {
@@ -44,13 +59,22 @@ const useData = () => {
     return formatedDate.toLocaleDateString("es-ES", options);
   };
 
+  const formatCurrency = (value: number) => {
+    const euro = new Intl.NumberFormat("en-DE", {
+      style: "currency",
+      currency: "EUR",
+    });
+
+    return euro.format(value);
+  };
+
   const extractYear = (date: string): string | number | undefined => {
     const fecha = new Date(date);
     const year = fecha.getUTCFullYear();
     return year;
   };
 
-  return { getData, formateDate, setDate, extractYear };
+  return { getAnalyticData, getData, formateDate, setDate, extractYear, formatCurrency };
 };
 
 export default useData;

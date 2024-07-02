@@ -25,8 +25,8 @@ const options = [
 ];
 
 const Home = () => {
-  const { getData, setDate, extractYear } = useData();
-  const data = useSelector((state: RootState) => state.data.data);
+  const { getAnalyticData, setDate, extractYear } = useData();
+  const data = useSelector((state: RootState) => state.data.analytics);
   const dates = useSelector((state: RootState) => state.data.dates);
   const loading = useSelector((state: RootState) => state.data.loading);
   const dispatch = useDispatch();
@@ -36,22 +36,21 @@ const Home = () => {
   };
 
   useEffect(() => {
-    getData({ category: "Alquiler", dates: dates });
-    getData({ category: "Agua", dates: dates });
-    getData({ category: "Luz", dates: dates });
-    getData({ category: "Gas", dates: dates });
-    getData({ category: "Seguro", dates: dates });
-    getData({ category: "Teléfono", dates: dates });
-    getData({ category: "Supermercados", dates: dates });
-    getData({ category: "Otra categoría", dates: dates });
+    getAnalyticData({ category: "Alquiler", dates: dates });
+    getAnalyticData({ category: "Agua", dates: dates });
+    getAnalyticData({ category: "Luz", dates: dates });
+    getAnalyticData({ category: "Gas", dates: dates });
+    getAnalyticData({ category: "Seguro", dates: dates });
+    getAnalyticData({ category: "Teléfono", dates: dates });
+    getAnalyticData({ category: "Supermercados", dates: dates });
+    getAnalyticData({ category: "Otra categoría", dates: dates });
 
     return () => {
       dispatch(setLoadingData(initialState.loading));
     };
   }, [dates]);
 
-  console.log(data)
-  
+  console.log(data);
 
   return (
     <HomeWrapper>

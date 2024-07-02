@@ -9,7 +9,8 @@ interface dataProps {
 }
 
 export interface DataState {
-  data: {
+  data: Array<any> | null;
+  analytics: {
     Alquiler: { data: dataProps[]; total: number } | null;
     Agua: { data: dataProps[]; total: number } | null;
     Luz: { data: dataProps[]; total: number } | null;
@@ -20,6 +21,7 @@ export interface DataState {
     Otros: { data: { dimentions: string[]; source: any }; total: number } | null;
   };
   loading: {
+    data: boolean,
     Alquiler: boolean;
     Agua: boolean;
     Luz: boolean;
@@ -27,19 +29,20 @@ export interface DataState {
     Seguro: boolean;
     Teléfono: boolean;
     Supermercados: boolean;
-    Otros: boolean
+    Otros: boolean;
   };
   dates: {
     from: string;
     to: string;
   };
   errors: {
-    uploadSheet: string | null
-  }
+    uploadSheet: string | null;
+  };
 }
 
 export const initialState: DataState = {
-  data: {
+  data: null,
+  analytics: {
     Alquiler: null,
     Agua: null,
     Luz: null,
@@ -47,9 +50,10 @@ export const initialState: DataState = {
     Seguro: null,
     Teléfono: null,
     Supermercados: null,
-    Otros: null
+    Otros: null,
   },
   loading: {
+    data: true,
     Alquiler: true,
     Agua: true,
     Luz: true,
@@ -57,19 +61,23 @@ export const initialState: DataState = {
     Seguro: true,
     Teléfono: true,
     Supermercados: true,
-    Otros: true
+    Otros: true,
   },
   dates: {
     from: new Date(new Date().getFullYear(), 0, 1).toISOString(),
     to: new Date(new Date().getFullYear(), 11, 31).toISOString(),
   },
   errors: {
-    uploadSheet: null
-  }
+    uploadSheet: null,
+  },
 };
 
 const setDataAction = (state: DataState, action: PayloadAction<any>) => {
-  state.data = { ...state.data, ...action.payload };
+  state.data = action.payload;
+};
+
+const setAnalyticDataAction = (state: DataState, action: PayloadAction<any>) => {
+  state.analytics = { ...state.analytics, ...action.payload };
 };
 
 const setLoadingDataAction = (state: DataState, action: PayloadAction<any>) => {
@@ -81,7 +89,7 @@ const setDatesAction = (state: DataState, action: PayloadAction<{ from: string; 
 };
 
 const setErrorsAction = (state: DataState, action: PayloadAction<any>) => {
-  state.errors = {...state.errors, ...action.payload}
+  state.errors = { ...state.errors, ...action.payload };
 };
 
-export { setDataAction, setLoadingDataAction, setDatesAction, setErrorsAction };
+export { setAnalyticDataAction, setLoadingDataAction, setDatesAction, setErrorsAction, setDataAction };

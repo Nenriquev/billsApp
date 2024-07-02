@@ -25,7 +25,7 @@ function BarChart({ data, loading, id }: { data: { dimentions: string[]; source:
         formatter: function (value: any) {
           const serie = value.seriesName;
           return `<span>${serie}</span></br>
-          <b>${value.data[serie]} €</b>`;
+          <b>${value.data[serie].toFixed(2)} €</b>`;
         },
       },
       ...data,

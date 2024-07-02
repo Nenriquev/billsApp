@@ -7,7 +7,7 @@ import bankData from "../data/bank.json";
 interface DataProps {
   concept: string;
   value: number;
-  category: string;
+  category: string | null | undefined;
   date: Date;
   bank: string;
 }
@@ -27,7 +27,7 @@ const readSheet = async (req: Request, res: Response) => {
       const buffer = file.buffer;
       const workbook = XLSX.read(buffer, { type: "buffer" });
       const sheetName = workbook.SheetNames[0];
-      const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+      const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: false });
       const headers: any = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 })[0];
 
       const matchedBank = bankData.find((bank) => {
@@ -38,7 +38,7 @@ const readSheet = async (req: Request, res: Response) => {
         return res.status(400).json({ err: "El archivo tiene un formato invalido para el banco seleccionado" });
       }
 
-      const data = destructureData(sheetData, body.bank);
+      const data = await destructureData(sheetData, body.bank);
 
       if (data && data.length > 0) {
         await saveDataInDb(data);
@@ -49,6 +49,7 @@ const readSheet = async (req: Request, res: Response) => {
 
     return res.status(200).json({ msg: "Succesfully" });
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ err: "Server error" });
   }
 };

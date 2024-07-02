@@ -1,5 +1,6 @@
 import { useDispatch } from "react-redux";
 import { setErrors } from "../redux/slices/dataSlice";
+import { setToast } from "../redux/slices/appSlice";
 
 const apiUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -17,6 +18,8 @@ export const useSheets = () => {
 
       if (upload.status !== 200) {
         dispatch(setErrors({ uploadSheet: response.err }));
+      } else {
+        dispatch(setToast({ open: true, msg: "Archivo subido exitosamente!", type: "success" }));
       }
     } catch (error) {
       console.log(error);
