@@ -21,7 +21,6 @@ const TableWrapper = styled.div`
     cursor: pointer;
     transition: 0.3s;
     border: none;
-    
 
     &:hover {
       background-color: #c1dfff;
@@ -59,8 +58,6 @@ interface TableProps {
 
 const VirtualizedTable: React.FC<TableProps> = ({ data, columns, onRowClick }) => {
   const [filter, setFilter] = useState<string>("");
-
- console.log(data, columns)
 
   const filteredData = useMemo(() => {
     return data.filter((item) => Object.values(item).some((val) => String(val).toLowerCase().includes(filter.toLowerCase())));

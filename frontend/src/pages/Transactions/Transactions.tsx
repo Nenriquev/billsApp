@@ -17,16 +17,14 @@ const Transactions = () => {
       { Header: "Valor", accessor: "value", width: 15, Cell: ({ value }: { value: number }) => formatCurrency(value) },
       { Header: "Banco", accessor: "bank", width: 15 },
     ],
-    [data]
+    [data, loading]
   );
 
   useEffect(() => {
     getData({});
   }, []);
 
-  if (loading) {
-    return <Loader />;
-  }
+ 
 
   return <VirtualizedTable data={data || []} columns={columns} onRowClick={(e) => console.log(e)} />;
 };
