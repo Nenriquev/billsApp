@@ -18,7 +18,7 @@ const months: string[] = [
 
 const getData = async ({ req, res }: { req: Request; res: Response }) => {
   try {
-    const data = await Data.find({}).sort({date: -1});
+    const data = await Data.find({}).sort({ date: -1 });
 
     return res.status(200).json(data);
   } catch (error) {

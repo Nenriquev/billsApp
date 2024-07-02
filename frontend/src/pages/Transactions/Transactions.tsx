@@ -17,7 +17,7 @@ const Transactions = () => {
       { Header: "Valor", accessor: "value", width: 15, Cell: ({ value }: { value: number }) => formatCurrency(value) },
       { Header: "Banco", accessor: "bank", width: 15 },
     ],
-    []
+    [data]
   );
 
   useEffect(() => {
