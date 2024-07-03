@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { useTable } from "react-table";
 import { FixedSizeList } from "react-window";
 import styled from "styled-components";
+import { useReactTable, GlobalFiltering, Column, getCoreRowModel, flexRender } from "@tanstack/react-table";
 
 const TableWrapper = styled.div`
   .table {
@@ -49,9 +49,10 @@ const TableWrapper = styled.div`
 interface TableProps {
   data: Array<any>;
   columns: {
-    Header: string;
-    accessor: string;
+    header: string;
+    accessorKey: string;
     width: number;
+    cell?: any;
   }[];
   onRowClick?: (row: any) => void;
 }
@@ -63,20 +64,19 @@ const VirtualizedTable: React.FC<TableProps> = ({ data, columns, onRowClick }) =
     return data.filter((item) => Object.values(item).some((val) => String(val).toLowerCase().includes(filter.toLowerCase())));
   }, [filter, data]);
 
-  const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({
+  const table = useReactTable({
+    data: filteredData,
     columns,
-    data,
+    getCoreRowModel: getCoreRowModel(),
   });
 
   const RenderRow = ({ index, style }: { index: number; style: any }) => {
-    const row = rows[index];
-    console.log(row.values);
-    prepareRow(row);
+    const row = table.getRowModel().rows[index];
     return (
-      <div {...row.getRowProps({ style })} className="tr" onClick={() => onRowClick && onRowClick(row?.original)}>
-        {row.cells.map((cell) => (
-          <div {...cell.getCellProps()} className="td" style={{ width: `${cell.column.width}%` }}>
-            {cell.render("Cell")}
+      <div style={style} className="tr" onClick={() => onRowClick && onRowClick(row.original)}>
+        {row.getVisibleCells().map((cell, key) => (
+          <div className="td" style={{ flex: `${cell.column.columnDef.size || 1}` }} key={key}>
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
           </div>
         ))}
       </div>
@@ -85,21 +85,21 @@ const VirtualizedTable: React.FC<TableProps> = ({ data, columns, onRowClick }) =
 
   return (
     <TableWrapper>
-      <div {...getTableProps()} className="table">
+      <div className="table">
         <div className="header">
-          {headerGroups.map((headerGroup) => (
-            <div {...headerGroup.getHeaderGroupProps()} className="tr">
-              {headerGroup.headers.map((column) => (
-                <div {...column.getHeaderProps()} className="th" style={{ width: `${column.width}%` }}>
-                  {column.render("Header")}
+          {table.getHeaderGroups().map((headerGroup) => (
+            <div key={headerGroup.id} className="tr">
+              {headerGroup.headers.map((header) => (
+                <div key={header.id} className="th" style={{ flex: `${header.column.getSize() || 1}` }}>
+                  {flexRender(header.column.columnDef.header, header.getContext())}
                 </div>
               ))}
             </div>
           ))}
         </div>
-        <div {...getTableBodyProps()} className="body">
-          <FixedSizeList height={400} itemCount={rows.length} itemSize={35} width="100%" className="row">
-            {RenderRow}
+        <div className="body">
+          <FixedSizeList height={400} itemCount={table.getRowModel().rows.length} itemSize={35} width="100%">
+            {({ index, style }) => <RenderRow index={index} style={style} />}
           </FixedSizeList>
         </div>
       </div>

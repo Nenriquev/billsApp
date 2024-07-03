@@ -11,13 +11,13 @@ const Transactions = () => {
   const loading = useSelector((state: RootState) => state.data.loading.data);
   const columns = useMemo(
     () => [
-      { Header: "Fecha", accessor: "date", width: 15, Cell: ({ value }: { value: string }) => formateDate(value) },
-      { Header: "Categoria", accessor: "category", width: 15 },
-      { Header: "Concepto", accessor: "concept", width: 40 },
-      { Header: "Valor", accessor: "value", width: 15, Cell: ({ value }: { value: number }) => formatCurrency(value) },
-      { Header: "Banco", accessor: "bank", width: 15 },
+      { header: "Fecha", accessorKey: "date", width: 15, cell: ({ getValue }: { getValue: any }) => formateDate(getValue()) },
+      { header: "Categoria", accessorKey: "category", width: 15 },
+      { header: "Concepto", accessorKey: "concept", width: 40 },
+      { header: "Valor", accessorKey: "value", width: 15, cell: ({ getValue }: { getValue: any }) => formatCurrency(getValue()) },
+      { header: "Banco", accessorKey: "bank", width: 15 },
     ],
-    [data, loading]
+    []
   );
 
   useEffect(() => {
