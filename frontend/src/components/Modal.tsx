@@ -41,6 +41,7 @@ const Modal = ({ open, element }: { open: boolean; element: Transaction | null }
   const categories = useSelector((state: RootState) => state.data.categories);
   const modalRef = useRef<HTMLDivElement>(null);
   const [inputValues, setInputValues] = useState<{ category?: string; value?: string; concept?: string } | null>(null);
+  
   const handleClickOutside = (event: MouseEvent) => {
     if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
       dispatch(setModal({ transaction: false }));
@@ -77,8 +78,6 @@ const Modal = ({ open, element }: { open: boolean; element: Transaction | null }
     };
   }, [open]);
 
-  console.log(categories);
-
   return (
     <AnimatePresence>
       {open && (
@@ -89,8 +88,15 @@ const Modal = ({ open, element }: { open: boolean; element: Transaction | null }
             </div>
             <div className="">
               <Input name="value" value={inputValues?.value || ""} type="number" onChange={handleChange} />
-              <Dropdown options={[]} selectedOption={""} handleSelect={() => {}} />
-              <Input name="category" value={inputValues?.category || ""} type="string" onChange={handleChange} />
+              <Dropdown
+                options={categories?.map((item) => ({ name: item.category, value: item.category })) || []}
+                selectedOption={inputValues?.category}
+                handleSelect={(item: any) => {
+                  console.log(item);
+                  setInputValues({ ...inputValues, category: item.value });
+                }}
+              />
+
               <Input name="concept" value={inputValues?.concept || ""} type="string" onChange={handleChange} />
             </div>
 

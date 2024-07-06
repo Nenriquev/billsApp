@@ -1,9 +1,12 @@
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { axiosFetch } from "../axios/axios";
 import { setAnalyticData, setCategories, setData, setDates, setLoadingData } from "../redux/slices/dataSlice";
+import { setModal, setToast } from "../redux/slices/appSlice";
+import { RootState } from "../redux/store";
 
 const useData = () => {
   const dispatch = useDispatch();
+  const transactions = useSelector((state: RootState) => state.data.data);
 
   const getData = async ({ dates }: { dates?: { from: string; to: string } }) => {
     dispatch(setLoadingData({ data: true }));
@@ -51,11 +54,13 @@ const useData = () => {
   };
 
   const updateTransaction = async ({ id, data }: { id: string; data: any }) => {
-    
     try {
       const update = await axiosFetch.post(`/data/update/${id}`, data);
-
-      console.log(update);
+      if (update.status === 200) {
+        dispatch(setData(transactions?.map((item: any) => (item.id === update?.data?._id ? { ...item, ...update.data } : item))));
+        dispatch(setModal({ transaction: false }));
+        dispatch(setToast({ open: true, msg: "Entrada actualizada !", type: "success" }));
+      }
     } catch (error) {
       console.log(error);
     }

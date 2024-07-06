@@ -31,6 +31,7 @@ const colors = {
 };
 
 const Toast = () => {
+
   const toast = useSelector((state: RootState) => state.app.toast);
   const dispatch = useDispatch();
 
@@ -40,7 +41,7 @@ const Toast = () => {
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [toast.open]);
 
   return (
     <AnimatePresence>

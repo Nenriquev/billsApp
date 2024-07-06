@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import VirtualizedTable from "../../components/Table";
 import useData from "../../hooks/useData";
 import { useDispatch, useSelector } from "react-redux";
@@ -8,11 +8,24 @@ import styled from "styled-components";
 import Modal from "../../components/Modal";
 import { setModal } from "../../redux/slices/appSlice";
 import { setSelectedTransaction } from "../../redux/slices/dataSlice";
+import Input from "../../components/Input";
 
-const TransactionsWrapper = styled.div``;
+const TransactionsWrapper = styled.div`
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 25px;
+  .header_bar {
+    height: 20%;
+  }
+  .table_container {
+    height: 80%;
+  }
+`;
 
 const Transactions = () => {
   const { getData, formateDate, formatCurrency, getCategories } = useData();
+  const [filter, setFilter] = useState<string>("");
   const data = useSelector((state: RootState) => state.data.data);
   const loading = useSelector((state: RootState) => state.data.loading.data);
   const openModal = useSelector((state: RootState) => state.app.modal.transaction);
@@ -34,6 +47,10 @@ const Transactions = () => {
     getCategories();
   }, []);
 
+  const filteredData = useMemo(() => {
+    return data?.filter((item) => Object.values(item).some((val) => String(val).toLowerCase().includes(filter.toLowerCase())));
+  }, [filter, data]);
+
   const handleOpenModal = (element: any) => {
     dispatch(setModal({ transaction: true }));
     dispatch(setSelectedTransaction(element));
@@ -45,11 +62,15 @@ const Transactions = () => {
 
   return (
     <TransactionsWrapper>
-      <h1>Transacciones</h1>
-      <div className="table">
-        <VirtualizedTable data={data || []} columns={columns} onRowClick={(element) => handleOpenModal(element)} />
+      <div className="header_bar">
+        <h1>Transacciones</h1>
+        <Input onChange={(e) => setFilter(e.target.value)} placeholder="Buscar" />
       </div>
-      <Modal open={openModal} element={element}/>
+
+      <div className="table_container">
+        <VirtualizedTable data={filteredData || []} columns={columns} onRowClick={(element) => handleOpenModal(element)} />
+      </div>
+      <Modal open={openModal} element={element} />
     </TransactionsWrapper>
   );
 };
