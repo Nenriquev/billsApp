@@ -1,5 +1,6 @@
 import { Response, Request } from "express";
 import Data from "../models/Data";
+import Categories from "../models/Categories";
 
 const months: string[] = [
   "Enero",
@@ -21,6 +22,30 @@ const getData = async ({ req, res }: { req: Request; res: Response }) => {
     const data = await Data.find({}).sort({ date: -1 });
 
     return res.status(200).json(data);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ err: error });
+  }
+};
+
+const getCategories = async ({ req, res }: { req: Request; res: Response }) => {
+  try {
+    const data = await Categories.find({});
+
+    return res.status(200).json(data);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ err: error });
+  }
+};
+
+const updateTransaction = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const data = req.body;
+
+  try {
+    await Data.findByIdAndUpdate(id, data);
+    return res.status(200).json({ msg: "success" });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ err: error });
@@ -270,4 +295,4 @@ const getAnalyticData = async (req: Request, res: Response) => {
   }
 };
 
-export { getAnalyticData, getData };
+export { getAnalyticData, getData, updateTransaction, getCategories };

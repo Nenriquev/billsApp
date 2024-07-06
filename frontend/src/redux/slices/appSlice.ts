@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { initialState, setToastAction } from "../actions/appActions";
+import { initialState, setModalAction, setToastAction } from "../actions/appActions";
 
 
 export const appSlice = createSlice({
@@ -7,9 +7,10 @@ export const appSlice = createSlice({
   initialState: initialState,
   reducers: {
     setToast: setToastAction,
+    setModal: setModalAction
   },
 });
 
-export const { setToast } = appSlice.actions;
+export const { setToast, setModal } = appSlice.actions;
 
 export const appReducer = appSlice.reducer;

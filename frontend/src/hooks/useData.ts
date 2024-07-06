@@ -1,6 +1,6 @@
 import { useDispatch } from "react-redux";
 import { axiosFetch } from "../axios/axios";
-import { setAnalyticData, setData, setDates, setLoadingData } from "../redux/slices/dataSlice";
+import { setAnalyticData, setCategories, setData, setDates, setLoadingData } from "../redux/slices/dataSlice";
 
 const useData = () => {
   const dispatch = useDispatch();
@@ -8,7 +8,7 @@ const useData = () => {
   const getData = async ({ dates }: { dates?: { from: string; to: string } }) => {
     dispatch(setLoadingData({ data: true }));
     try {
-      const data: any = await axiosFetch.get(`/api/data`, {
+      const data: any = await axiosFetch.get(`/data`, {
         params: dates,
       });
 
@@ -20,12 +20,25 @@ const useData = () => {
     }
   };
 
+  const getCategories = async () => {
+    dispatch(setLoadingData({ categories: true }));
+    try {
+      const data: any = await axiosFetch.get(`/data/categories`);
+
+      if (data.status === 200) dispatch(setCategories(data?.data));
+    } catch (error) {
+      console.log(error);
+    } finally {
+      dispatch(setLoadingData({ categories: false }));
+    }
+  };
+
   const getAnalyticData = async ({ category, dates }: { category: string; dates: { from: string; to: string } }) => {
     category === "Otra categoría" ? (category = "Otros") : category;
 
     dispatch(setLoadingData({ [category as string]: true }));
     try {
-      const data: any = await axiosFetch.get(`/api/data/analytics?category=${category === "Otros" ? "Otra categoría" : category}`, {
+      const data: any = await axiosFetch.get(`/data/analytics?category=${category === "Otros" ? "Otra categoría" : category}`, {
         params: dates,
       });
 
@@ -34,6 +47,17 @@ const useData = () => {
       console.log(error);
     } finally {
       dispatch(setLoadingData({ [category as string]: false }));
+    }
+  };
+
+  const updateTransaction = async ({ id, data }: { id: string; data: any }) => {
+    
+    try {
+      const update = await axiosFetch.post(`/data/update/${id}`, data);
+
+      console.log(update);
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -74,7 +98,7 @@ const useData = () => {
     return year;
   };
 
-  return { getAnalyticData, getData, formateDate, setDate, extractYear, formatCurrency };
+  return { getAnalyticData, getData, formateDate, setDate, extractYear, formatCurrency, updateTransaction, getCategories };
 };
 
 export default useData;

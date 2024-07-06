@@ -1,4 +1,5 @@
 import { PayloadAction } from "@reduxjs/toolkit";
+import { Transaction } from "../../types";
 
 interface dataProps {
   id: string;
@@ -10,6 +11,8 @@ interface dataProps {
 
 export interface DataState {
   data: Array<any> | null;
+  categories: Array<any> | null
+  selectedTransaction: Transaction | null;
   analytics: {
     Alquiler: { data: dataProps[]; total: number } | null;
     Agua: { data: dataProps[]; total: number } | null;
@@ -21,7 +24,8 @@ export interface DataState {
     Otros: { data: { dimentions: string[]; source: any }; total: number } | null;
   };
   loading: {
-    data: boolean,
+    data: boolean;
+    categories: boolean;
     Alquiler: boolean;
     Agua: boolean;
     Luz: boolean;
@@ -42,6 +46,8 @@ export interface DataState {
 
 export const initialState: DataState = {
   data: null,
+  categories: null,
+  selectedTransaction: null,
   analytics: {
     Alquiler: null,
     Agua: null,
@@ -54,6 +60,7 @@ export const initialState: DataState = {
   },
   loading: {
     data: true,
+    categories: true,
     Alquiler: true,
     Agua: true,
     Luz: true,
@@ -76,6 +83,14 @@ const setDataAction = (state: DataState, action: PayloadAction<any>) => {
   state.data = action.payload;
 };
 
+const setCategoriesAction = (state: DataState, action: PayloadAction<any>) => {
+  state.categories = action.payload;
+};
+
+const setSelectedTransactionAction = (state: DataState, action: PayloadAction<any>) => {
+  state.selectedTransaction = action.payload;
+};
+
 const setAnalyticDataAction = (state: DataState, action: PayloadAction<any>) => {
   state.analytics = { ...state.analytics, ...action.payload };
 };
@@ -92,4 +107,4 @@ const setErrorsAction = (state: DataState, action: PayloadAction<any>) => {
   state.errors = { ...state.errors, ...action.payload };
 };
 
-export { setAnalyticDataAction, setLoadingDataAction, setDatesAction, setErrorsAction, setDataAction };
+export { setAnalyticDataAction, setLoadingDataAction, setDatesAction, setErrorsAction, setDataAction, setSelectedTransactionAction, setCategoriesAction };

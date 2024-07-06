@@ -1,18 +1,13 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 
-interface dataProps {
-  id: string;
-  value: number;
-  concept: string;
-  category: string;
-  date: Date;
-}
-
 export interface AppState {
   toast: {
     open: boolean;
     msg: string;
     type: "success" | "danger" | null;
+  };
+  modal: {
+    transaction: boolean;
   };
 }
 
@@ -22,10 +17,17 @@ export const initialState: AppState = {
     msg: "",
     type: null,
   },
+  modal: {
+    transaction: false,
+  },
 };
 
 const setToastAction = (state: AppState, action: PayloadAction<{ open: boolean; msg: string; type: "success" | "danger" | null }>) => {
   state.toast = { ...state.toast, ...action.payload };
 };
 
-export { setToastAction };
+const setModalAction = (state: AppState, action: PayloadAction<{ [key: string]: boolean }>) => {
+  state.modal = { ...state.modal, ...action.payload };
+};
+
+export { setToastAction, setModalAction };
