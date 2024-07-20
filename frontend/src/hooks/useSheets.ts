@@ -9,7 +9,7 @@ export const useSheets = () => {
 
   const uploadSheet = async (formData: any) => {
     try {
-      const upload = await fetch(`${apiUrl}/api/sheet/upload`, {
+      const upload = await fetch(`${apiUrl}/sheet/upload`, {
         method: "post",
         body: formData,
       });
@@ -18,6 +18,7 @@ export const useSheets = () => {
 
       if (upload.status !== 200) {
         dispatch(setErrors({ uploadSheet: response.err }));
+        dispatch(setToast({ open: true, msg: response.err, type: "danger" }));
       } else {
         dispatch(setToast({ open: true, msg: "Archivo subido exitosamente!", type: "success" }));
       }

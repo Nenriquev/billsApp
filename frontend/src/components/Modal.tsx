@@ -40,8 +40,10 @@ const Modal = ({ open, element }: { open: boolean; element: Transaction | null }
   const { updateTransaction } = useData();
   const categories = useSelector((state: RootState) => state.data.categories);
   const modalRef = useRef<HTMLDivElement>(null);
-  const [inputValues, setInputValues] = useState<{ category?: string; value?: string; concept?: string } | null>(null);
+  const [inputValues, setInputValues] = useState<{ category?: string; value?: string; concept?: string; subcategory?: string } | null>(null);
+  const [subcategories, setSubcategories] = useState<Array<any>>([])
   
+
   const handleClickOutside = (event: MouseEvent) => {
     if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
       dispatch(setModal({ transaction: false }));
@@ -59,10 +61,12 @@ const Modal = ({ open, element }: { open: boolean; element: Transaction | null }
 
   useEffect(() => {
     if (element) {
+      
       setInputValues({
-        category: element.category,
+        category: element?.category?._id,
         value: element.value,
         concept: element.concept,
+        subcategory: element?.subcategory
       });
     }
 
@@ -78,6 +82,14 @@ const Modal = ({ open, element }: { open: boolean; element: Transaction | null }
     };
   }, [open]);
 
+  useEffect(() => {
+    const subcategory = categories?.find((item) => item._id === inputValues?.category)?.subcategories;
+    setSubcategories(subcategory)
+  },[inputValues?.category])
+
+
+  console.log(inputValues)
+
   return (
     <AnimatePresence>
       {open && (
@@ -89,13 +101,21 @@ const Modal = ({ open, element }: { open: boolean; element: Transaction | null }
             <div className="">
               <Input name="value" value={inputValues?.value || ""} type="number" onChange={handleChange} />
               <Dropdown
-                options={categories?.map((item) => ({ name: item.category, value: item.category })) || []}
+                options={categories?.map((item) => ({ name: item.category, value: item._id })) || []}
                 selectedOption={inputValues?.category}
                 handleSelect={(item: any) => {
-                  console.log(item);
                   setInputValues({ ...inputValues, category: item.value });
                 }}
               />
+              {subcategories?.length > 0 && (
+                <Dropdown
+                  options={subcategories?.map((item: any) => ({ name: item.name, value: item.name })) || []}
+                  selectedOption={inputValues?.subcategory}
+                  handleSelect={(item: any) => {
+                    setInputValues({ ...inputValues, subcategory: item.name });
+                  }}
+                />
+              )}
 
               <Input name="concept" value={inputValues?.concept || ""} type="string" onChange={handleChange} />
             </div>

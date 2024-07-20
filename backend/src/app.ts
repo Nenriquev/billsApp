@@ -6,6 +6,8 @@ import bodyParser from "body-parser";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import dataRouter from "./routes/dataRoutes";
+import cron from "node-cron";
+import { sendMail } from "./utils/sendMail";
 dotenv.config();
 
 const app = express();
@@ -14,7 +16,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-
 
 const MONGO_URI = process.env.MONGO_URI;
 
@@ -36,6 +37,10 @@ app.listen(PORT, async () => {
   console.log(`Server is listening on port ${PORT}`);
 });
 
+cron.schedule("0 9 1 * *", () => {
+  console.log("Ejecutando tarea programada: Enviar correo de recordatorio");
+  sendMail()
+});
 
 app.get("/", (req, res) => res.send("Server online"));
 app.use("/api/data", dataRouter);

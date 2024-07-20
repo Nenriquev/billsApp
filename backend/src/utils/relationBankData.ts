@@ -1,5 +1,3 @@
-import { addDays, format, parse } from "date-fns";
-import data from "../data/data.json";
 import moment from "moment-timezone";
 import Categories from "../models/Categories";
 
@@ -25,7 +23,7 @@ const destructureData = async (sheetData: Array<any>, bank: "santander" | "bbva"
             });
           });
 
-          const category = categoryEntry ? categoryEntry.category : "Otra categoría";
+          const category = categoryEntry ? categoryEntry._id : "668afccc5224599433a049a2";
           const value = Math.abs(transaction["IMPORTE EUR"]);
 
           const element = {
@@ -35,8 +33,9 @@ const destructureData = async (sheetData: Array<any>, bank: "santander" | "bbva"
             category,
             bank,
           };
+
           if (matchedType) element.concept = matchedType.charAt(0).toUpperCase() + matchedType.slice(1);
-          else if (category === "Seguro") element.concept = "Adeslas Neru";
+          if (categoryEntry?.category === "Seguro") element.concept = "Adeslas Neru";
 
           return element;
         });
@@ -67,12 +66,13 @@ const destructureData = async (sheetData: Array<any>, bank: "santander" | "bbva"
             return entry.types.some((type) => {
               if (transaction.Concepto.toLowerCase().includes(type.entry)) {
                 matchedType = type.name;
+
                 return true;
               }
               return false;
             });
           });
-          const category = categoryEntry ? categoryEntry?.category : "Otra categoría";
+          const category = categoryEntry ? categoryEntry._id : "668afccc5224599433a049a2";
           const value = Math.abs(transaction.Importe);
 
           const element = {
@@ -84,7 +84,7 @@ const destructureData = async (sheetData: Array<any>, bank: "santander" | "bbva"
           };
 
           if (matchedType) element.concept = matchedType.charAt(0).toUpperCase() + matchedType.slice(1);
-          if (category === "Seguro") element.concept = "Adeslas Uriel";
+          if (categoryEntry?.category === "Seguro") element.concept = "Adeslas Uriel";
 
           return element;
         });

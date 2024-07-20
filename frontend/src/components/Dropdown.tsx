@@ -81,7 +81,7 @@ const Dropdown = ({ options, handleSelect, selectedOption }: DropdownProps) => {
 
   return (
     <DropdownWrapper ref={dropdownRef} onClick={() => setOpenDropdown(!openDropdown)}>
-      <span className="label">{selectedOption || "Selecciona una opción"}</span>
+      <span className="label">{options.find((item) => item.value === selectedOption)?.name || "Selecciona una opción"}</span>
       <div className="arrow">
         <IconChevronDown />
       </div>

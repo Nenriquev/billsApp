@@ -3,7 +3,7 @@ import * as echarts from "echarts";
 import Loader from "./Loader";
 import useData from "../hooks/useData";
 
-function BarChart({ data, loading, id }: { data: { dimentions: string[]; source: any } | Array<any>; loading: boolean; id: string }) {
+function BarChart({ data, loading, id }: { data: any; loading: boolean; id: string }) {
   const chartRef = useRef(null);
   const { formateDate } = useData();
 
@@ -21,8 +21,17 @@ function BarChart({ data, loading, id }: { data: { dimentions: string[]; source:
         bottom: "3%",
         containLabel: true,
       },
+      yAxis: {
+        type: "value",
+        axisLabel: {
+          formatter: function (value: any) {
+            return `${value.toFixed(0)}€`;
+          },
+        },
+      },
       tooltip: {
         formatter: function (value: any) {
+          console.log(value);
           const serie = value.seriesName;
           return `<span>${serie}</span></br>
           <b>${value.data[serie].toFixed(2)} €</b>`;

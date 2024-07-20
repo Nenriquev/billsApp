@@ -43,6 +43,7 @@ const Home = () => {
     getAnalyticData({ category: "Seguro", dates: dates });
     getAnalyticData({ category: "Teléfono", dates: dates });
     getAnalyticData({ category: "Supermercados", dates: dates });
+    getAnalyticData({ category: "Entretenimiento", dates: dates });
     getAnalyticData({ category: "Otra categoría", dates: dates });
 
     return () => {
@@ -120,6 +121,14 @@ const Home = () => {
             {data.Teléfono?.total && <CountUp end={data.Teléfono.total} duration={1} decimals={2} suffix=" €" className="total" />}
           </div>
           <BarChart data={data?.Teléfono?.data || []} loading={loading.Teléfono} id="telefono" />
+        </div>
+
+        <div className="card">
+          <div className="head">
+            <h1>Ocio</h1>
+            {data.Entretenimiento?.total && <CountUp end={data.Entretenimiento.total} duration={1} decimals={2} suffix=" €" className="total" />}
+          </div>
+          <BarChart data={data?.Entretenimiento?.data || []} loading={loading.Entretenimiento} id="ocio" />
         </div>
       </div>
       <div className="row">

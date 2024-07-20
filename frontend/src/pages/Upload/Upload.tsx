@@ -24,7 +24,6 @@ const Upload = () => {
   const errors = useSelector((state: RootState) => state.data.errors);
   const dispatch = useDispatch()
 
-  dispatch(setToast({open: true, msg: 'test', type: 'success'}))
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

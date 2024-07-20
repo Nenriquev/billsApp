@@ -1,6 +1,7 @@
 import { Response, Request } from "express";
 import Data from "../models/Data";
 import Categories from "../models/Categories";
+import { colors } from "../data/data";
 
 const months: string[] = [
   "Enero",
@@ -19,7 +20,7 @@ const months: string[] = [
 
 const getData = async ({ req, res }: { req: Request; res: Response }) => {
   try {
-    const data = await Data.find({}).sort({ date: -1 });
+    const data = await Data.find({}).populate("category").sort({ date: -1 });
 
     return res.status(200).json(data);
   } catch (error) {
@@ -64,18 +65,19 @@ const getAnalyticData = async (req: Request, res: Response) => {
   const toDate = new Date(to);
 
   try {
+    const categoryId = await Categories.findOne({ category });
     const data = await Data.find({
-      category,
+      category: categoryId?._id,
       date: {
         $gte: fromDate,
         $lte: toDate,
       },
-    });
+    }).populate("category");
 
     const total = await Data.aggregate([
       {
         $match: {
-          category: category,
+          category: categoryId?._id,
           date: {
             $gte: fromDate,
             $lte: toDate,
@@ -145,18 +147,72 @@ const getAnalyticData = async (req: Request, res: Response) => {
             return {
               type: "bar",
               stack: "total",
+              color: colors[item as string] || "",
             };
           }
         }),
         xAxis: { type: "category", data: months },
-        yAxis: {
-          type: "value",
-          axisLabel: {
-            formatter: function (value: any) {
-              return `${value.toFixed(0)}€`;
-            },
-          },
+      };
+    } else if (categoryId && categoryId?.subcategories?.length > 0) {
+      const dimentions: string[] = [];
+      const source: any = [];
+      const monthData: { [month: string]: { [seriesName: string]: number } } = {};
+
+      data.forEach((transaction: any) => {
+        const date = new Date(transaction.date);
+        const month = months[date.getMonth()];
+
+        if (!monthData[month]) {
+          monthData[month] = {};
+        }
+
+        const seriesName = transaction.subcategory;
+
+        if (monthData[month][seriesName]) {
+          monthData[month][seriesName] = monthData[month][seriesName] + transaction.value;
+        } else {
+          monthData[month][seriesName] = transaction.value;
+        }
+
+        if (!dimentions.includes(seriesName)) {
+          dimentions.push(seriesName);
+        }
+      });
+
+      months.forEach((month) => {
+        if (monthData[month] && Object.keys(monthData[month]).length > 0) {
+          const monthEntry: any = { month };
+
+          dimentions.forEach((dim) => {
+            if (monthData[month][dim] && dim !== "month") {
+              monthEntry[dim] = monthData[month][dim];
+            } else if (dim !== "month") {
+              monthEntry[dim] = null;
+            }
+          });
+
+          source.push(monthEntry);
+        }
+      });
+
+      dataset = {
+        legend: {
+          show: true,
         },
+        dataset: {
+          dimentions: ["month", ...dimentions],
+          source: source,
+        },
+        series: dimentions.map((item: any, index: number) => {
+          if (item !== "month") {
+            return {
+              type: "bar",
+              stack: "total", 
+              color: colors[item as string] || "",
+            };
+          }
+        }),
+        xAxis: { type: "category", data: months },
       };
     } else if (category === "Otra categoría") {
       const groupedData = data.reduce((acc, transaction) => {
@@ -191,14 +247,6 @@ const getAnalyticData = async (req: Request, res: Response) => {
         xAxis: {
           type: "category",
           data: concepts,
-        },
-        yAxis: {
-          type: "value",
-          axisLabel: {
-            formatter: function (value: number) {
-              return `${value.toFixed(0)}€`;
-            },
-          },
         },
         tooltip: {
           trigger: "axis",
@@ -278,14 +326,6 @@ const getAnalyticData = async (req: Request, res: Response) => {
         },
         series: series,
         xAxis: { type: "category", data: months },
-        yAxis: {
-          type: "value",
-          axisLabel: {
-            formatter: function (value: any) {
-              return `${value.toFixed(0)}€`;
-            },
-          },
-        },
       };
     }
 

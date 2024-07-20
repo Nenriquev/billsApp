@@ -34,7 +34,7 @@ const Transactions = () => {
   const columns = useMemo(
     () => [
       { header: "Fecha", accessorKey: "date", width: 15, cell: ({ getValue }: { getValue: any }) => formateDate(getValue()) },
-      { header: "Categoria", accessorKey: "category", width: 15 },
+      { header: "Categoria", accessorKey: "category", width: 15, cell: ({ getValue }: { getValue: any }) => getValue().category },
       { header: "Concepto", accessorKey: "concept", width: 40 },
       { header: "Valor", accessorKey: "value", width: 15, cell: ({ getValue }: { getValue: any }) => formatCurrency(getValue()) },
       { header: "Banco", accessorKey: "bank", width: 15 },

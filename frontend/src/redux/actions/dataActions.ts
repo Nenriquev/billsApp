@@ -2,16 +2,14 @@ import { PayloadAction } from "@reduxjs/toolkit";
 import { Transaction } from "../../types";
 
 interface dataProps {
-  id: string;
-  value: number;
-  concept: string;
-  category: string;
-  date: Date;
+  dimentions: string[];
+  source: any;
+  series: any;
 }
 
 export interface DataState {
   data: Array<any> | null;
-  categories: Array<any> | null
+  categories: Array<any> | null;
   selectedTransaction: Transaction | null;
   analytics: {
     Alquiler: { data: dataProps[]; total: number } | null;
@@ -20,6 +18,7 @@ export interface DataState {
     Gas: { data: dataProps[]; total: number } | null;
     Seguro: { data: dataProps[]; total: number } | null;
     Teléfono: { data: dataProps[]; total: number } | null;
+    Entretenimiento: { data: dataProps[]; total: number } | null;
     Supermercados: { data: { dimentions: string[]; source: any }; total: number } | null;
     Otros: { data: { dimentions: string[]; source: any }; total: number } | null;
   };
@@ -33,6 +32,7 @@ export interface DataState {
     Seguro: boolean;
     Teléfono: boolean;
     Supermercados: boolean;
+    Entretenimiento: boolean;
     Otros: boolean;
   };
   dates: {
@@ -55,6 +55,7 @@ export const initialState: DataState = {
     Gas: null,
     Seguro: null,
     Teléfono: null,
+    Entretenimiento: null,
     Supermercados: null,
     Otros: null,
   },
@@ -68,6 +69,7 @@ export const initialState: DataState = {
     Seguro: true,
     Teléfono: true,
     Supermercados: true,
+    Entretenimiento: true,
     Otros: true,
   },
   dates: {
@@ -107,4 +109,12 @@ const setErrorsAction = (state: DataState, action: PayloadAction<any>) => {
   state.errors = { ...state.errors, ...action.payload };
 };
 
-export { setAnalyticDataAction, setLoadingDataAction, setDatesAction, setErrorsAction, setDataAction, setSelectedTransactionAction, setCategoriesAction };
+export {
+  setAnalyticDataAction,
+  setLoadingDataAction,
+  setDatesAction,
+  setErrorsAction,
+  setDataAction,
+  setSelectedTransactionAction,
+  setCategoriesAction,
+};

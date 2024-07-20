@@ -3,11 +3,12 @@ import XLSX from "xlsx";
 import { destructureData } from "../utils/relationBankData";
 import Data from "../models/Data";
 import bankData from "../data/bank.json";
+import { ObjectId } from "mongodb";
 
 interface DataProps {
   concept: string;
   value: number;
-  category: string | null | undefined;
+  category: string | null | undefined | ObjectId;
   date: Date;
   bank: string;
 }
@@ -63,6 +64,7 @@ const saveDataInDb = async (data: DataProps[]) => {
     }
   } catch (error) {
     console.log(error);
+    throw new Error("Error al subir el archivo");
   }
 };
 
