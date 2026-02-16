@@ -19,7 +19,7 @@ const SKIP_PREFIXES = [
   "documento impreso",
 ];
 
-const TWO_AMOUNTS_RE = /^(.*?)\s*(-?\d[\d.]*,\d{2})\s+EUR\s+(\d[\d.]*,\d{2})\s+EUR\s*$/;
+const TWO_AMOUNTS_RE = /^(.*?)\s*(-?\d[\d.]*,\d{2})\s*EUR\s*(\d[\d.]*,?\d{2})\s*EUR\s*$/;
 const DATE_RE = /^(\d{2}\/\d{2}\/\d{4})$/;
 const FECHA_VALOR_RE = /^Fecha valor:/;
 
@@ -37,7 +37,7 @@ function parseEurAmount(raw: string): number {
 function parseSantanderCreditCardText(text: string): ParsedLine[] {
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
   const transactions: ParsedLine[] = [];
-  const amountRegex = /^(.+?)\s+(-?[\d.,]+)\s+EUR$/;
+  const amountRegex = /^(.+?)\s+(-?[\d.,]+)\s*EUR\s*$/;
 
   let i = 0;
   while (i < lines.length) {
