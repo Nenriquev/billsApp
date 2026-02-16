@@ -1,4 +1,4 @@
-import { PDFParse } from "pdf-parse";
+import pdfParse from "pdf-parse";
 import moment from "moment-timezone";
 import Categories from "../models/Categories";
 import { ICategory, ITransaction } from "../types";
@@ -186,8 +186,7 @@ export async function parsePdfTransactions(
     throw new Error(`Parser de PDF no disponible para: ${bank}`);
   }
 
-  const parser = new PDFParse({ data: new Uint8Array(buffer) });
-  const result = await parser.getText();
+  const result = await pdfParse(buffer);
   const text = result.text;
 
   const parsed = parserFn(text);

@@ -2,30 +2,47 @@ import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import cron from "node-cron";
 
 import dataRouter from "./routes/dataRoutes";
 import sheetRouter from "./routes/sheetRoutes";
 import dashboardRouter from "./routes/dashboardRoutes";
 import categoryRouter from "./routes/categoryRoutes";
 import { errorHandler } from "./middleware/errorHandler";
-import { sendMail } from "./utils/sendMail";
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const MONGO_URI = process.env.MONGO_URI;
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(",") || ["http://localhost:5173"];
-
-if (!MONGO_URI) {
-  console.error("MONGO_URI no definida. Asegúrate de configurarla en las variables de entorno.");
-  process.exit(1);
-}
 
 app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+/* ── Cached MongoDB connection (works in serverless & local) ── */
+let isConnected = false;
+
+async function connectDB(): Promise<void> {
+  if (isConnected) return;
+
+  const uri = process.env.MONGO_URI;
+  if (!uri) {
+    throw new Error("MONGO_URI no definida en las variables de entorno.");
+  }
+
+  await mongoose.connect(uri);
+  isConnected = true;
+  console.log("[DB] Conectado a MongoDB");
+}
+
+app.use(async (_req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error("[DB] Error de conexión:", err);
+    res.status(500).json({ error: "Error de conexión a la base de datos" });
+  }
+});
 
 app.get("/", (_req, res) => res.json({ status: "ok", message: "Bills API online" }));
 app.use("/api/data", dataRouter);
@@ -35,22 +52,27 @@ app.use("/api/categories", categoryRouter);
 
 app.use(errorHandler);
 
-cron.schedule("0 9 1 * *", () => {
-  console.log("[Cron] Enviando correo de recordatorio mensual");
-  sendMail();
-});
+/* ── Local dev: listen + cron ── */
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 3000;
 
-mongoose
-  .connect(MONGO_URI)
-  .then(() => {
-    console.log("[DB] Conectado a MongoDB");
-    app.listen(PORT, () => {
-      console.log(`[Server] Escuchando en puerto ${PORT}`);
+  connectDB()
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`[Server] Escuchando en puerto ${PORT}`);
+      });
+
+      import("node-cron").then(({ default: cron }) => {
+        const { sendMail } = require("./utils/sendMail");
+        cron.schedule("0 9 1 * *", () => {
+          console.log("[Cron] Enviando correo de recordatorio mensual");
+          sendMail();
+        });
+      });
+    })
+    .catch((err) => {
+      console.error("[DB] Error al conectar:", err.message);
     });
-  })
-  .catch((error) => {
-    console.error("[DB] Error al conectar a MongoDB:", error.message);
-    process.exit(1);
-  });
+}
 
 export default app;
