@@ -1,36 +1,39 @@
 import { InputHTMLAttributes } from "react";
 import styled from "styled-components";
 
-const InputWrapper = styled.div`
-  /* Chrome, Safari, Edge, Opera */
+const Wrapper = styled.div`
   input::-webkit-outer-spin-button,
   input::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
   }
+  input[type="number"] { appearance: textfield; }
 
-  /* Firefox */
-  input[type="number"] {
-    appearance: textfield;
-  }
   input {
-    border: 1px solid #8787875d;
-    border-radius: 5px;
-    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
     width: 100%;
+    font-size: 0.88rem;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: var(--bg-card);
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &::placeholder { color: var(--text-muted); }
 
     &:focus {
-      outline: 2px solid #c1dfff;
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-light);
     }
   }
 `;
 
-const Input = (props: InputHTMLAttributes<HTMLInputElement>) => {
-  return (
-    <InputWrapper>
-      <input {...props}/>
-    </InputWrapper>
-  );
-};
+const Input = (props: InputHTMLAttributes<HTMLInputElement>) => (
+  <Wrapper>
+    <input {...props} />
+  </Wrapper>
+);
 
 export default Input;

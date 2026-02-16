@@ -1,67 +1,87 @@
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "../redux/store";
-import styled from "styled-components";
 import { useEffect } from "react";
-import { setToast } from "../redux/slices/appSlice";
+import styled from "styled-components";
 import { AnimatePresence, motion } from "framer-motion";
+import { useAppDispatch, useAppSelector } from "../redux/hooks";
+import { setToast } from "../redux/slices/appSlice";
+import { IconCheck, IconAlertTriangle } from "@tabler/icons-react";
 
-const ToastWrapper = styled.div`
+const Wrapper = styled.div<{ $type: string }>`
   position: fixed;
-  z-index: 99;
-  background-color: white;
-  width: 300px;
-  height: 100px;
-  border-radius: 10px;
-  bottom: 10px;
-  right: 30px;
+  z-index: 100;
+  bottom: 20px;
+  right: 20px;
+  background: var(--bg-card);
+  min-width: 300px;
+  border-radius: var(--radius);
   overflow: hidden;
-  border: 1px solid #8787875d;
-  box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
 
-  .progressBar {
+  .icon-wrap {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: ${(p) => (p.$type === "success" ? "var(--success-light)" : "var(--danger-light)")};
+    color: ${(p) => (p.$type === "success" ? "var(--success)" : "var(--danger)")};
+    svg { width: 16px; height: 16px; }
+  }
+
+  .msg {
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .bar {
     position: absolute;
     bottom: 0;
-    height: 2px;
+    left: 0;
+    height: 3px;
+    border-radius: 0 0 var(--radius) var(--radius);
+    background: ${(p) => (p.$type === "success" ? "var(--success)" : "var(--danger)")};
   }
 `;
 
-const colors = {
-  success: "green",
-  danger: "red",
-};
-
 const Toast = () => {
-
-  const toast = useSelector((state: RootState) => state.app.toast);
-  const dispatch = useDispatch();
+  const { open, msg, type } = useAppSelector((s) => s.app.toast);
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      dispatch(setToast({ open: false, msg: "", type: null }));
-    }, 5000);
-
-    return () => clearTimeout(timer);
-  }, [toast.open]);
+    if (!open) return;
+    const t = setTimeout(() => dispatch(setToast({ open: false, msg: "", type: null })), 4000);
+    return () => clearTimeout(t);
+  }, [open, dispatch]);
 
   return (
     <AnimatePresence>
-      {toast.open && (
-        <ToastWrapper
+      {open && (
+        <Wrapper
           as={motion.div}
-          initial={{ x: "100%", opacity: 0 }}
+          $type={type || "success"}
+          initial={{ x: "120%", opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          exit={{ x: "100%", opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          exit={{ x: "120%", opacity: 0 }}
+          transition={{ type: "spring", damping: 25, stiffness: 300 }}
         >
-          {toast.msg}
+          <div className="icon-wrap">
+            {type === "success" ? <IconCheck /> : <IconAlertTriangle />}
+          </div>
+          <span className="msg">{msg}</span>
           <motion.div
-            className="progressBar"
-            style={{ backgroundColor: toast.type ? colors[toast.type] : "" }}
+            className="bar"
             initial={{ width: "100%" }}
             animate={{ width: 0 }}
-            transition={{ duration: 5 }}
-          ></motion.div>
-        </ToastWrapper>
+            transition={{ duration: 4 }}
+          />
+        </Wrapper>
       )}
     </AnimatePresence>
   );

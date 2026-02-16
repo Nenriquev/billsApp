@@ -1,11 +1,18 @@
-import express from "express";
-import { getAnalyticData, getCategories, getData, updateTransaction } from "../controllers/dataController";
+import { Router } from "express";
+import {
+  getData,
+  getCategories,
+  getAnalyticData,
+  updateTransaction,
+  deleteTransaction,
+} from "../controllers/dataController";
 
-const dataRouter = express.Router();
+const dataRouter = Router();
 
 dataRouter.get("/", getData);
 dataRouter.get("/categories", getCategories);
 dataRouter.get("/analytics", getAnalyticData);
-dataRouter.post("/update/:id", updateTransaction);
+dataRouter.patch("/:id", updateTransaction);
+dataRouter.delete("/:id", deleteTransaction);
 
 export default dataRouter;

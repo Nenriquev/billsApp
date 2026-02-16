@@ -1,10 +1,22 @@
 [
   {
     "bank": "bbva",
+    "type": "excel",
     "headers": ["Fecha", "F.Valor", "Concepto", "Movimiento", "Importe", "Divisa", "Observaciones"]
   },
   {
     "bank": "santander",
+    "type": "excel",
     "headers": ["FECHA OPERACIÓN", "FECHA VALOR", "CONCEPTO", "IMPORTE EUR", "SALDO"]
+  },
+  {
+    "bank": "santander-credito",
+    "type": "pdf",
+    "headers": []
+  },
+  {
+    "bank": "santander-cuenta-pdf",
+    "type": "pdf",
+    "headers": []
   }
 ]

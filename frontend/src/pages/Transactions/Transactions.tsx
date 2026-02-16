@@ -1,77 +1,132 @@
 import { useEffect, useMemo, useState } from "react";
-import VirtualizedTable from "../../components/Table";
-import useData from "../../hooks/useData";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "../../redux/store";
-import Loader from "../../components/Loader";
 import styled from "styled-components";
+import VirtualizedTable from "../../components/Table";
+import Loader from "../../components/Loader";
 import Modal from "../../components/Modal";
-import { setModal } from "../../redux/slices/appSlice";
-import { setSelectedTransaction } from "../../redux/slices/dataSlice";
 import Input from "../../components/Input";
+import { useAppDispatch, useAppSelector } from "../../redux/hooks";
+import { setSelectedTransaction } from "../../redux/slices/dataSlice";
+import { setModal } from "../../redux/slices/appSlice";
+import { fetchTransactions, fetchCategories } from "../../redux/thunks/dataThunks";
+import { formatDate, formatCurrency } from "../../utils/format";
+import { Transaction } from "../../types";
+import { ColumnDef } from "@tanstack/react-table";
 
-const TransactionsWrapper = styled.div`
+const Page = styled.div`
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 25px;
+  padding: 24px 32px;
+
   .header_bar {
-    height: 20%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 16px;
+    flex-wrap: wrap;
+
+    h1 { font-size: 1.6rem; }
+    .search { width: 280px; }
   }
+
   .table_container {
-    height: 80%;
+    flex: 1;
+    min-height: 0;
   }
 `;
 
+const LoaderWrap = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+`;
+
 const Transactions = () => {
-  const { getData, formateDate, formatCurrency, getCategories } = useData();
-  const [filter, setFilter] = useState<string>("");
-  const data = useSelector((state: RootState) => state.data.data);
-  const loading = useSelector((state: RootState) => state.data.loading.data);
-  const openModal = useSelector((state: RootState) => state.app.modal.transaction);
-  const element = useSelector((state: RootState) => state.data.selectedTransaction);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+  const [filter, setFilter] = useState("");
+  const { transactions, loading, selectedTransaction } = useAppSelector((s) => ({
+    transactions: s.data.transactions,
+    loading: s.data.loading.transactions,
+    selectedTransaction: s.data.selectedTransaction,
+  }));
+  const openModal = useAppSelector((s) => s.app.modal.transaction);
+
   const columns = useMemo(
     () => [
-      { header: "Fecha", accessorKey: "date", width: 15, cell: ({ getValue }: { getValue: any }) => formateDate(getValue()) },
-      { header: "Categoria", accessorKey: "category", width: 15, cell: ({ getValue }: { getValue: any }) => getValue().category },
-      { header: "Concepto", accessorKey: "concept", width: 40 },
-      { header: "Valor", accessorKey: "value", width: 15, cell: ({ getValue }: { getValue: any }) => formatCurrency(getValue()) },
-      { header: "Banco", accessorKey: "bank", width: 15 },
+      {
+        header: "Fecha",
+        accessorKey: "date",
+        size: 15,
+        cell: (info: { getValue: () => unknown }) => formatDate(info.getValue() as string),
+      },
+      {
+        header: "Categoría",
+        accessorKey: "category",
+        size: 15,
+        cell: (info: { getValue: () => unknown }) => {
+          const cat = info.getValue() as Transaction["category"] | null;
+          return cat?.category ?? "—";
+        },
+      },
+      { header: "Concepto", accessorKey: "concept", size: 40 },
+      {
+        header: "Valor",
+        accessorKey: "value",
+        size: 15,
+        cell: (info: { getValue: () => unknown }) => formatCurrency(info.getValue() as number),
+      },
+      { header: "Banco", accessorKey: "bank", size: 15 },
     ],
     []
   );
 
   useEffect(() => {
-    getData({});
-    getCategories();
-  }, []);
+    dispatch(fetchTransactions());
+    dispatch(fetchCategories());
+  }, [dispatch]);
 
   const filteredData = useMemo(() => {
-    return data?.filter((item) => Object.values(item).some((val) => String(val).toLowerCase().includes(filter.toLowerCase())));
-  }, [filter, data]);
+    if (!filter) return transactions;
+    const lower = filter.toLowerCase();
+    return transactions.filter((item) =>
+      Object.values(item).some((val) => String(val).toLowerCase().includes(lower))
+    );
+  }, [filter, transactions]);
 
-  const handleOpenModal = (element: any) => {
+  const handleOpenModal = (element: Transaction) => {
     dispatch(setModal({ transaction: true }));
     dispatch(setSelectedTransaction(element));
   };
 
   if (loading) {
-    return <Loader />;
+    return <LoaderWrap><Loader /></LoaderWrap>;
   }
 
   return (
-    <TransactionsWrapper>
+    <Page>
       <div className="header_bar">
         <h1>Transacciones</h1>
-        <Input onChange={(e) => setFilter(e.target.value)} placeholder="Buscar" />
+        <div className="search">
+          <Input
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Buscar..."
+            value={filter}
+          />
+        </div>
       </div>
 
       <div className="table_container">
-        <VirtualizedTable data={filteredData || []} columns={columns} onRowClick={(element) => handleOpenModal(element)} />
+        <VirtualizedTable
+          data={filteredData}
+          columns={columns as ColumnDef<Transaction, unknown>[]}
+          onRowClick={(el) => handleOpenModal(el as Transaction)}
+        />
       </div>
-      <Modal open={openModal} element={element} />
-    </TransactionsWrapper>
+
+      <Modal open={openModal} element={selectedTransaction} />
+    </Page>
   );
 };
 

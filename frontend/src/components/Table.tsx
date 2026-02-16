@@ -1,91 +1,75 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { FixedSizeList } from "react-window";
 import styled from "styled-components";
-import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table";
-import Input from "./Input";
+import { useReactTable, getCoreRowModel, flexRender, ColumnDef } from "@tanstack/react-table";
 
-const TableWrapper = styled.div`
+const Wrapper = styled.div`
   display: block;
-  border-collapse: collapse;
   width: 100%;
   height: 100%;
-  border: 1px solid black;
-  border-radius: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   overflow: hidden;
+  background: var(--bg-card);
 
   .header {
     display: block;
-    height: 41px;
-
-    div > div:last-child {
-      padding-right: 27px;
-    }
+    height: 42px;
+    div > div:last-child { padding-right: 24px; }
   }
 
-  .body {
-    height: calc(100% - 41px);
-  }
+  .body { height: calc(100% - 42px); }
 
   .tr {
     display: flex;
     width: 100%;
-
     cursor: pointer;
-    transition: 0.3s;
-    border: none;
-
-    &:hover {
-      background-color: #c1dfff;
-      transition: 0.3s;
-    }
+    transition: background 0.15s;
+    &:hover { background: var(--accent-light); }
   }
 
-  .th,
-  .td {
-    padding: 10px;
-    border: 1px solid black;
+  .th, .td {
+    padding: 10px 14px;
     box-sizing: border-box;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    border: 0.1px solid #ededed;
+    font-size: 0.85rem;
   }
 
   .th {
-    background-color: #f0f0f0;
-    font-weight: bold;
-    text-align: left;
+    background: var(--border-light);
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .td {
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-primary);
   }
 `;
 
-interface TableProps {
-  data: Array<any>;
-  columns: {
-    header: string;
-    accessorKey: string;
-    width: number;
-    cell?: any;
-  }[];
-  onRowClick?: (row: any) => void;
+interface TableProps<T> {
+  data: T[];
+  columns: ColumnDef<T, unknown>[];
+  onRowClick?: (row: T) => void;
 }
 
-const VirtualizedTable: React.FC<TableProps> = ({ data, columns, onRowClick }) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [height, setHeight] = useState<number>(0);
+function VirtualizedTable<T>({ data, columns, onRowClick }: TableProps<T>) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
 
   useEffect(() => {
-    if (containerRef.current) {
-      setHeight(containerRef.current.clientHeight);
-    }
-
-    const handleResize = () => {
-      if (containerRef.current) {
-        setHeight(containerRef.current.clientHeight);
-      }
+    const update = () => {
+      if (containerRef.current) setHeight(containerRef.current.clientHeight);
     };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, []);
 
   const table = useReactTable({
@@ -94,12 +78,12 @@ const VirtualizedTable: React.FC<TableProps> = ({ data, columns, onRowClick }) =
     getCoreRowModel: getCoreRowModel(),
   });
 
-  const RenderRow = ({ index, style }: { index: number; style: any }) => {
+  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
     const row = table.getRowModel().rows[index];
     return (
-      <div style={style} className="tr" onClick={() => onRowClick && onRowClick(row.original)}>
-        {row.getVisibleCells().map((cell, key) => (
-          <div className="td" style={{ flex: `${cell.column.columnDef.size || 1}` }} key={key}>
+      <div style={style} className="tr" onClick={() => onRowClick?.(row.original)}>
+        {row.getVisibleCells().map((cell) => (
+          <div className="td" style={{ flex: `${cell.column.columnDef.size || 1}` }} key={cell.id}>
             {flexRender(cell.column.columnDef.cell, cell.getContext())}
           </div>
         ))}
@@ -108,25 +92,25 @@ const VirtualizedTable: React.FC<TableProps> = ({ data, columns, onRowClick }) =
   };
 
   return (
-    <TableWrapper>
+    <Wrapper>
       <div className="header">
-        {table.getHeaderGroups().map((headerGroup) => (
-          <div key={headerGroup.id} className="tr">
-            {headerGroup.headers.map((header) => (
-              <div key={header.id} className="th" style={{ flex: `${header.column.getSize() || 1}` }}>
-                {flexRender(header.column.columnDef.header, header.getContext())}
+        {table.getHeaderGroups().map((hg) => (
+          <div key={hg.id} className="tr">
+            {hg.headers.map((h) => (
+              <div key={h.id} className="th" style={{ flex: `${h.column.getSize() || 1}` }}>
+                {flexRender(h.column.columnDef.header, h.getContext())}
               </div>
             ))}
           </div>
         ))}
       </div>
       <div className="body" ref={containerRef}>
-        <FixedSizeList height={height} itemCount={table.getRowModel().rows.length} itemSize={35} width="100%" className="main_table">
-          {({ index, style }) => <RenderRow index={index} style={style} />}
+        <FixedSizeList height={height} itemCount={table.getRowModel().rows.length} itemSize={42} width="100%">
+          {({ index, style }) => <Row index={index} style={style} />}
         </FixedSizeList>
       </div>
-    </TableWrapper>
+    </Wrapper>
   );
-};
+}
 
 export default VirtualizedTable;

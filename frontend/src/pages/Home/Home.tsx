@@ -1,146 +1,350 @@
-import { HomeWrapper } from "./Home.styles";
-import BarChart from "../../components/BarChart";
 import { useEffect } from "react";
-import useData from "../../hooks/useData";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "../../redux/store";
-import CountUp from "react-countup";
-import { setLoadingData } from "../../redux/slices/dataSlice";
-import { initialState } from "../../redux/actions/dataActions";
+import styled from "styled-components";
+import { useAppDispatch, useAppSelector } from "../../redux/hooks";
+import { fetchDashboard } from "../../redux/thunks/dataThunks";
+import { setSelectedYear, setSelectedMonth } from "../../redux/slices/dataSlice";
 import Dropdown from "../../components/Dropdown";
+import Loader from "../../components/Loader";
+import { formatCurrency } from "../../utils/format";
+import { DropdownOption } from "../../types";
+import DonutChart from "../../components/charts/DonutChart";
+import TrendChart from "../../components/charts/TrendChart";
+import CategoryBarChart from "../../components/charts/CategoryBarChart";
+import {
+  IconTrendingUp,
+  IconTrendingDown,
+  IconMinus,
+  IconCash,
+  IconReceipt,
+  IconChartPie,
+} from "@tabler/icons-react";
 
-const options = [
-  {
-    name: 2023,
-    value: 2023,
-  },
-  {
-    name: 2024,
-    value: 2024,
-  },
-  {
-    name: 2025,
-    value: 2025,
-  },
+const currentYear = new Date().getFullYear();
+
+const yearOptions: DropdownOption[] = Array.from({ length: 5 }, (_, i) => {
+  const y = currentYear - i;
+  return { name: y, value: y };
+});
+
+const MONTH_NAMES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
 
-const Home = () => {
-  const { getAnalyticData, setDate, extractYear } = useData();
-  const data = useSelector((state: RootState) => state.data.analytics);
-  const dates = useSelector((state: RootState) => state.data.dates);
-  const loading = useSelector((state: RootState) => state.data.loading);
-  const dispatch = useDispatch();
+const monthOptions: DropdownOption[] = MONTH_NAMES.map((name, i) => ({
+  name,
+  value: i,
+}));
 
-  const handleChange = (e: any) => {
-    setDate(e.value);
-  };
+const Page = styled.div`
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 100%;
+`;
 
-  useEffect(() => {
-    getAnalyticData({ category: "Alquiler", dates: dates });
-    getAnalyticData({ category: "Agua", dates: dates });
-    getAnalyticData({ category: "Luz", dates: dates });
-    getAnalyticData({ category: "Gas", dates: dates });
-    getAnalyticData({ category: "Seguro", dates: dates });
-    getAnalyticData({ category: "Teléfono", dates: dates });
-    getAnalyticData({ category: "Supermercados", dates: dates });
-    getAnalyticData({ category: "Entretenimiento", dates: dates });
-    getAnalyticData({ category: "Otra categoría", dates: dates });
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
 
-    return () => {
-      dispatch(setLoadingData(initialState.loading));
-    };
-  }, [dates]);
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+  }
+
+  .filters {
+    display: flex;
+    gap: 12px;
+    .dropdown-wrap { width: 160px; }
+  }
+`;
+
+const KpiGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+`;
+
+const KpiCard = styled.div<{ $accent?: string }>`
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s;
+
+  &:hover { box-shadow: var(--shadow-md); }
+
+  .kpi-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .kpi-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: ${(p) => p.$accent || "var(--accent-light)"};
+    color: ${(p) => (p.$accent ? "white" : "var(--accent)")};
+
+    svg { width: 20px; height: 20px; }
+  }
+
+  .kpi-label {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .kpi-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  .kpi-comparison {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    font-weight: 500;
+
+    svg { width: 14px; height: 14px; }
+
+    &.positive { color: var(--danger); }
+    &.negative { color: var(--success); }
+    &.neutral { color: var(--text-muted); }
+  }
+`;
+
+const ChartsRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const ChartCard = styled.div`
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+
+  h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+  }
+
+  &.full-width {
+    grid-column: 1 / -1;
+  }
+`;
+
+const TopExpensesList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .expense-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--border-light);
+
+    .rank {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .info {
+      flex: 1;
+      min-width: 0;
+
+      .name {
+        font-size: 0.85rem;
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .count {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+      }
+    }
+
+    .amount {
+      font-size: 0.9rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+  }
+`;
+
+const LoaderWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+`;
+
+function ComparisonBadge({ changePercent, label }: { changePercent: number; label: string }) {
+  const isUp = changePercent > 0;
+  const isNeutral = changePercent === 0;
+  const cls = isNeutral ? "neutral" : isUp ? "positive" : "negative";
+  const Icon = isNeutral ? IconMinus : isUp ? IconTrendingUp : IconTrendingDown;
 
   return (
-    <HomeWrapper>
-      <div className="navbar">
-        <div className="title">
-          <h1>Estadisticas</h1>
-        </div>
-        <div className="utils">
-          <div className="drop">
-            <Dropdown options={options} handleSelect={handleChange} selectedOption={extractYear(dates?.to)} />
+    <span className={`kpi-comparison ${cls}`}>
+      <Icon />
+      {isNeutral ? "Sin cambios" : `${Math.abs(changePercent)}% ${label}`}
+    </span>
+  );
+}
+
+const Home = () => {
+  const dispatch = useAppDispatch();
+  const { dashboard, loading, selectedYear, selectedMonth } = useAppSelector((s) => s.data);
+
+  useEffect(() => {
+    dispatch(fetchDashboard({ year: selectedYear, month: selectedMonth }));
+  }, [dispatch, selectedYear, selectedMonth]);
+
+  const handleYearChange = (opt: DropdownOption) => {
+    dispatch(setSelectedYear(opt.value as number));
+  };
+
+  const handleMonthChange = (opt: DropdownOption) => {
+    dispatch(setSelectedMonth(opt.value as number));
+  };
+
+  if (loading.dashboard && !dashboard) {
+    return (
+      <LoaderWrapper>
+        <Loader />
+      </LoaderWrapper>
+    );
+  }
+
+  const d = dashboard;
+
+  return (
+    <Page>
+      <Header>
+        <h1>Dashboard</h1>
+        <div className="filters">
+          <div className="dropdown-wrap">
+            <Dropdown
+              options={monthOptions}
+              handleSelect={handleMonthChange}
+              selectedOption={selectedMonth}
+            />
+          </div>
+          <div className="dropdown-wrap">
+            <Dropdown
+              options={yearOptions}
+              handleSelect={handleYearChange}
+              selectedOption={selectedYear}
+            />
           </div>
         </div>
-      </div>
+      </Header>
 
-      <div className="grid">
-        <div className="card">
-          <div className="head">
-            <h1>Alquiler</h1>
-            {data.Alquiler?.total && <CountUp end={data.Alquiler.total} duration={1} decimals={2} suffix=" €" className="total" />}
+      <KpiGrid>
+        <KpiCard $accent="#6366f1">
+          <div className="kpi-header">
+            <span className="kpi-label">Gasto total ({selectedYear})</span>
+            <div className="kpi-icon"><IconCash /></div>
           </div>
+          <span className="kpi-value">{formatCurrency(d?.totalSpent ?? 0)}</span>
+        </KpiCard>
 
-          <BarChart data={data?.Alquiler?.data || []} loading={loading.Alquiler} id="alquiler" />
-        </div>
-
-        <div className="card">
-          <div className="head">
-            <h1>Luz</h1>
-            {data.Luz?.total && <CountUp end={data.Luz.total} duration={1} decimals={2} suffix=" €" className="total" />}
+        <KpiCard $accent="#3b82f6">
+          <div className="kpi-header">
+            <span className="kpi-label">Gasto del mes</span>
+            <div className="kpi-icon"><IconReceipt /></div>
           </div>
-          <BarChart data={data?.Luz?.data || []} loading={loading.Luz} id="luz" />
-        </div>
+          <span className="kpi-value">{formatCurrency(d?.vsLastMonth?.current ?? 0)}</span>
+          {d?.vsLastMonth && <ComparisonBadge changePercent={d.vsLastMonth.changePercent} label="vs mes anterior" />}
+        </KpiCard>
 
-        <div className="card">
-          <div className="head">
-            <h1>Supermercados</h1>
-            {data.Supermercados?.total && <CountUp end={data.Supermercados.total} duration={1} decimals={2} suffix=" €" className="total" />}
+        <KpiCard $accent="#8b5cf6">
+          <div className="kpi-header">
+            <span className="kpi-label">vs mismo mes año anterior</span>
+            <div className="kpi-icon"><IconChartPie /></div>
           </div>
-          <BarChart data={data?.Supermercados?.data || []} loading={loading.Supermercados} id="supermercado" />
-        </div>
+          <span className="kpi-value">{formatCurrency(d?.vsLastYear?.previous ?? 0)}</span>
+          {d?.vsLastYear && <ComparisonBadge changePercent={d.vsLastYear.changePercent} label="interanual" />}
+        </KpiCard>
 
-        <div className="card">
-          <div className="head">
-            <h1>Agua</h1>
-            {data.Agua?.total && <CountUp end={data.Agua.total} duration={1} decimals={2} suffix=" €" className="total" />}
+        <KpiCard>
+          <div className="kpi-header">
+            <span className="kpi-label">Promedio por transacción</span>
           </div>
+          <span className="kpi-value">{formatCurrency(d?.averageTransaction ?? 0)}</span>
+          <span className="kpi-comparison neutral">{d?.transactionCount ?? 0} transacciones</span>
+        </KpiCard>
+      </KpiGrid>
 
-          <BarChart data={data?.Agua?.data || []} loading={loading.Agua} id="agua" />
-        </div>
+      <ChartsRow>
+        <ChartCard>
+          <h3>Distribución por categoría</h3>
+          <DonutChart data={d?.categoryBreakdown ?? []} />
+        </ChartCard>
 
-        <div className="card">
-          <div className="head">
-            <h1>Gas</h1>
-            {data.Gas?.total && <CountUp end={data.Gas.total} duration={1} decimals={2} suffix=" €" className="total" />}
-          </div>
-          <BarChart data={data?.Gas?.data || []} loading={loading.Gas} id="gas" />
-        </div>
+        <ChartCard>
+          <h3>Top 10 gastos del año</h3>
+          <TopExpensesList>
+            {(d?.topExpenses ?? []).map((exp, i) => (
+              <div className="expense-row" key={exp.concept}>
+                <div className="rank">{i + 1}</div>
+                <div className="info">
+                  <div className="name">{exp.concept}</div>
+                  <div className="count">{exp.count} transacciones</div>
+                </div>
+                <div className="amount">{formatCurrency(exp.total)}</div>
+              </div>
+            ))}
+          </TopExpensesList>
+        </ChartCard>
+      </ChartsRow>
 
-        <div className="card">
-          <div className="head">
-            <h1>Seguro</h1>
-            {data.Seguro?.total && <CountUp end={data.Seguro.total} duration={1} decimals={2} suffix=" €" className="total" />}
-          </div>
-          <BarChart data={data?.Seguro?.data || []} loading={loading.Seguro} id="seguro" />
-        </div>
+      <ChartCard className="full-width">
+        <h3>Tendencia mensual de gastos</h3>
+        <TrendChart data={d?.monthlyTrend ?? []} />
+      </ChartCard>
 
-        <div className="card">
-          <div className="head">
-            <h1>Teléfono</h1>
-            {data.Teléfono?.total && <CountUp end={data.Teléfono.total} duration={1} decimals={2} suffix=" €" className="total" />}
-          </div>
-          <BarChart data={data?.Teléfono?.data || []} loading={loading.Teléfono} id="telefono" />
-        </div>
-
-        <div className="card">
-          <div className="head">
-            <h1>Ocio</h1>
-            {data.Entretenimiento?.total && <CountUp end={data.Entretenimiento.total} duration={1} decimals={2} suffix=" €" className="total" />}
-          </div>
-          <BarChart data={data?.Entretenimiento?.data || []} loading={loading.Entretenimiento} id="ocio" />
-        </div>
-      </div>
-      <div className="row">
-        <div className="card">
-          <div className="head">
-            <h1>Otras categorias</h1>
-            {data.Otros?.total && <CountUp end={data?.Otros.total} duration={1} decimals={2} suffix=" €" className="total" />}
-          </div>
-          <BarChart data={data?.Otros?.data || []} loading={loading.Otros} id="otros" />
-        </div>
-      </div>
-    </HomeWrapper>
+      <ChartCard className="full-width">
+        <h3>Gastos mensuales por categoría</h3>
+        <CategoryBarChart data={d?.monthlyByCategory ?? { months: [], series: [] }} />
+      </ChartCard>
+    </Page>
   );
 };
 

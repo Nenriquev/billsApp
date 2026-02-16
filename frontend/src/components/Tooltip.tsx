@@ -1,35 +1,57 @@
 import { AnimatePresence, motion } from "framer-motion";
-import React, { ReactNode, useState } from "react";
+import { ReactNode, useState } from "react";
 import styled from "styled-components";
 
-const TooltipWrapper = styled.div<{ position: string }>`
+const Wrapper = styled.div<{ $position: string }>`
   position: relative;
 
   .tooltip {
     position: absolute;
-    top: 10%;
-    ${(props) => props.position}: 50px;
-    background-color: #000000e4;
+    top: 50%;
+    transform: translateY(-50%);
+    ${(p) => p.$position}: calc(100% + 8px);
+    background: var(--text-primary);
     color: white;
-    border-radius: 10px;
-    padding: 10px;
+    border-radius: 6px;
+    padding: 6px 10px;
     white-space: nowrap;
+    font-size: 0.75rem;
+    font-weight: 500;
+    pointer-events: none;
+    z-index: 40;
   }
 `;
 
-const Tooltip = ({ children, position, text }: { children: ReactNode; position: "left" | "right" | "bottom" | "top"; text: string }) => {
-  const [open, setOpen] = useState(false);
+interface TooltipProps {
+  children: ReactNode;
+  position: "left" | "right" | "bottom" | "top";
+  text: string;
+}
+
+const Tooltip = ({ children, position, text }: TooltipProps) => {
+  const [show, setShow] = useState(false);
+
   return (
-    <TooltipWrapper onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)} position={position}>
+    <Wrapper
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+      $position={position}
+    >
       {children}
       <AnimatePresence>
-        {open && (
-          <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="tooltip">
+        {show && (
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.12 }}
+            className="tooltip"
+          >
             {text}
           </motion.span>
         )}
       </AnimatePresence>
-    </TooltipWrapper>
+    </Wrapper>
   );
 };
 

@@ -1,33 +1,41 @@
 import { Route, Routes } from "react-router-dom";
-import Home from "./pages/Home/Home";
-import Upload from "./pages/Upload/Upload";
-import SideBar from "./components/SideBar";
 import styled from "styled-components";
-import Transactions from "./pages/Transactions/Transactions";
+import SideBar from "./components/SideBar";
 import Toast from "./components/Toast";
+import Home from "./pages/Home/Home";
+import Analytics from "./pages/Analytics/Analytics";
+import Transactions from "./pages/Transactions/Transactions";
+import Upload from "./pages/Upload/Upload";
+import CategoriesPage from "./pages/Categories/Categories";
 
-const MainWrapper = styled.div`
-  width: calc(100% - 70px);
+const Layout = styled.div`
+  display: flex;
   height: 100%;
-  overflow-y: scroll;
-  position: absolute;
-  right: 0;
+`;
+
+const MainContent = styled.main`
+  flex: 1;
+  margin-left: 64px;
+  height: 100%;
+  overflow-y: auto;
 `;
 
 function App() {
   return (
-    <>
+    <Layout>
       <SideBar />
-      <MainWrapper>
+      <MainContent>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/upload" element={<Upload />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/transactions" element={<Transactions />} />
-          <Route path="*" element={<h1>Not found</h1>} />
+          <Route path="/upload" element={<Upload />} />
+          <Route path="/categories" element={<CategoriesPage />} />
+          <Route path="*" element={<div style={{ padding: 40 }}><h1>404 - Página no encontrada</h1></div>} />
         </Routes>
-      </MainWrapper>
+      </MainContent>
       <Toast />
-    </>
+    </Layout>
   );
 }
 

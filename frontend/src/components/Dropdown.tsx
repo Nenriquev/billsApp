@@ -2,102 +2,115 @@ import { IconChevronDown } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
+import { DropdownOption } from "../types";
 
 interface DropdownProps {
-  options: { name: string | number; value: string | number }[];
-  handleSelect: any;
+  options: DropdownOption[];
+  handleSelect: (option: DropdownOption) => void;
   selectedOption: string | number | undefined;
 }
 
-const DropdownWrapper = styled.div`
+const Wrapper = styled.div`
   width: 100%;
   position: relative;
-  border-radius: 10px;
-  border: 1px solid #a2a2a2;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
   height: 40px;
   display: flex;
   align-items: center;
   cursor: pointer;
-  background-color: white;
+  background: var(--bg-card);
+  user-select: none;
+  transition: border-color 0.2s;
+
+  &:hover { border-color: var(--accent); }
 
   .arrow {
     margin-left: auto;
     display: flex;
     align-items: center;
-    padding-right: 5px;
-
-    svg {
-      stroke-width: 1;
-    }
+    padding-right: 8px;
+    color: var(--text-muted);
+    svg { width: 16px; height: 16px; }
   }
 
   .label {
-    padding: 10px;
+    padding: 0 12px;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.88rem;
+    color: var(--text-primary);
   }
 
-  .dropdown {
+  .placeholder {
+    color: var(--text-muted);
+  }
+
+  .menu {
     position: absolute;
     display: flex;
     flex-direction: column;
-    border: 1px solid #a2a2a2;
-    border-radius: 0 0 10px 10px;
-    top: 102%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    top: calc(100% + 4px);
     width: 100%;
-    background-color: white;
+    background: var(--bg-card);
     overflow: hidden;
-    z-index: 10;
+    z-index: 30;
+    max-height: 220px;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
 
     span {
       cursor: pointer;
-      padding: 10px;
-      transition: 0.3s;
-
-      &:hover {
-        background-color: #c9daff;
-        transition: 0.3s;
-      }
+      padding: 8px 12px;
+      font-size: 0.88rem;
+      transition: 0.15s;
+      &:hover { background: var(--accent-light); color: var(--accent); }
     }
   }
 `;
 
 const Dropdown = ({ options, handleSelect, selectedOption }: DropdownProps) => {
-  const [openDropdown, setOpenDropdown] = useState<boolean>(false);
-
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleOutsideClick = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOpenDropdown(false);
-      }
+    const close = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-
-    document.addEventListener("mousedown", handleOutsideClick);
-
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
-    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
   }, []);
 
-  return (
-    <DropdownWrapper ref={dropdownRef} onClick={() => setOpenDropdown(!openDropdown)}>
-      <span className="label">{options.find((item) => item.value === selectedOption)?.name || "Selecciona una opción"}</span>
-      <div className="arrow">
-        <IconChevronDown />
-      </div>
+  const selected = options.find((o) => o.value === selectedOption);
 
+  return (
+    <Wrapper ref={ref} onClick={() => setOpen((p) => !p)}>
+      <span className={`label ${!selected ? "placeholder" : ""}`}>
+        {selected?.name ?? "Selecciona una opción"}
+      </span>
+      <div className="arrow"><IconChevronDown /></div>
       <AnimatePresence>
-        {openDropdown && (
-          <motion.div className="dropdown" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            {options.map((option) => (
-              <span key={option.value} onClick={() => handleSelect(option)}>
-                {option.name}
+        {open && (
+          <motion.div
+            className="menu"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15 }}
+          >
+            {options.map((o) => (
+              <span key={o.value} onClick={() => handleSelect(o)}>
+                {o.name}
               </span>
             ))}
           </motion.div>
         )}
       </AnimatePresence>
-    </DropdownWrapper>
+    </Wrapper>
   );
 };
 

@@ -1,75 +1,116 @@
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useRef, useState } from "react";
 import { UploadPageWrapper } from "./Upload.styles";
-import { useSheets } from "../../hooks/useSheets";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "../../redux/store";
 import Dropdown from "../../components/Dropdown";
-import { setToast } from "../../redux/slices/appSlice";
+import { useAppDispatch } from "../../redux/hooks";
+import { uploadSheet } from "../../redux/thunks/dataThunks";
+import { DropdownOption } from "../../types";
+import { IconUpload, IconFile, IconX } from "@tabler/icons-react";
 
-const options = [
-  {
-    name: "BBVA",
-    value: "bbva",
-  },
-  {
-    name: "Santander",
-    value: "santander",
-  },
+const bankOptions: DropdownOption[] = [
+  { name: "BBVA (Excel)", value: "bbva" },
+  { name: "Santander - Cuenta (Excel)", value: "santander" },
+  { name: "Santander - Cuenta (PDF)", value: "santander-cuenta-pdf" },
+  { name: "Santander - Tarjeta crédito (PDF)", value: "santander-credito" },
 ];
 
 const Upload = () => {
-  const { uploadSheet } = useSheets();
-  const [option, setOption] = useState<{ name: string; value: string } | null>(null);
+  const dispatch = useAppDispatch();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [bank, setBank] = useState<DropdownOption | null>(null);
   const [file, setFile] = useState<File | null>(null);
-  const errors = useSelector((state: RootState) => state.data.errors);
-  const dispatch = useDispatch()
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!file || !bank) return;
 
-    if (!file || !option) {
-      console.error("Debes seleccionar un archivo y una opción");
-      return;
-    }
     const formData = new FormData();
     formData.append("sheet", file);
-    formData.append("bank", option.value);
+    formData.append("bank", bank.value as string);
 
-    uploadSheet(formData);
+    setUploading(true);
+    await dispatch(uploadSheet(formData));
+    setUploading(false);
+    setFile(null);
+    if (fileRef.current) fileRef.current.value = "";
   };
 
-  const handleChange = (e: ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    const { type } = e.target;
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) setFile(files[0]);
+  };
 
-    if (type === "file") {
-      const inputElement = e.target as HTMLInputElement;
-      const files = inputElement.files;
-      if (files && files.length > 0) {
-        setFile(files[0]);
-      }
-    }
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) setFile(files[0]);
+  };
+
+  const removeFile = () => {
+    setFile(null);
+    if (fileRef.current) fileRef.current.value = "";
   };
 
   return (
     <UploadPageWrapper>
-      <h1>Upload</h1>
+      <h1>Subir extracto bancario</h1>
+      <p className="subtitle">
+        Sube tus extractos en formato Excel (.xls, .xlsx) o PDF según el banco.
+      </p>
 
       <form onSubmit={handleSubmit}>
-        <div className="drop">
-          <Dropdown options={options} handleSelect={setOption} selectedOption={option?.name} />
+        <label className="field-label">Banco / Tipo</label>
+        <div className="dropdown-wrap">
+          <Dropdown
+            options={bankOptions}
+            handleSelect={setBank}
+            selectedOption={bank?.value}
+          />
         </div>
-        {/* <select defaultValue={" "} name="bank" onChange={(e) => setOption(e.target.value)}>
-          <option value={option} disabled>
-            Seleciona una opcion
-          </option>
-          <option value={"bbva"}>BBVA</option>
-          <option value={"santander"}>Santander</option>
-        </select> */}
-        <input type="file" name="sheet" accept=".csv, .xlsx, .xls" onChange={handleChange} />
 
-        <button>Submit</button>
-        {errors.uploadSheet && <span>{errors.uploadSheet}</span>}
+        <label className="field-label">Archivo</label>
+        <div
+          className={`drop-zone ${dragOver ? "drag-over" : ""} ${file ? "has-file" : ""}`}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          onClick={() => !file && fileRef.current?.click()}
+        >
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".csv,.xlsx,.xls,.pdf"
+            onChange={handleFileChange}
+            hidden
+          />
+
+          {file ? (
+            <div className="file-info">
+              <IconFile size={24} />
+              <div className="file-details">
+                <span className="file-name">{file.name}</span>
+                <span className="file-size">
+                  {(file.size / 1024).toFixed(1)} KB
+                </span>
+              </div>
+              <button type="button" className="remove-btn" onClick={removeFile}>
+                <IconX size={16} />
+              </button>
+            </div>
+          ) : (
+            <div className="drop-content">
+              <IconUpload size={32} color="var(--text-muted)" />
+              <span>Arrastra tu archivo aquí o <strong>haz clic</strong> para seleccionar</span>
+              <span className="formats">Formatos: .xls, .xlsx, .csv, .pdf</span>
+            </div>
+          )}
+        </div>
+
+        <button type="submit" className="submit-btn" disabled={!file || !bank || uploading}>
+          {uploading ? "Procesando..." : "Subir y procesar"}
+        </button>
       </form>
     </UploadPageWrapper>
   );

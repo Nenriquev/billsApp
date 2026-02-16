@@ -1,12 +1,10 @@
-import express from "express";
-import { readSheet } from "../controllers/sheetController";
+import { Router } from "express";
 import multer from "multer";
+import { uploadSheet } from "../controllers/sheetController";
 
-const sheetRouter = express.Router();
-const storage = multer.memoryStorage()
+const sheetRouter = Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
-const upload = multer({ storage: storage });
-
-sheetRouter.post("/upload", upload.single("sheet"), readSheet);
+sheetRouter.post("/upload", upload.single("sheet"), uploadSheet);
 
 export default sheetRouter;

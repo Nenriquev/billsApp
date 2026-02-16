@@ -18,4 +18,6 @@ const DataSchema = new Schema({
   },
 });
 
+DataSchema.index({ concept: 1, date: 1, value: 1 }, { unique: true });
+
 export default mongoose.model("Data", DataSchema, "data");
