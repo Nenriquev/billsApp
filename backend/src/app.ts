@@ -7,6 +7,7 @@ import dataRouter from "./routes/dataRoutes";
 import sheetRouter from "./routes/sheetRoutes";
 import dashboardRouter from "./routes/dashboardRoutes";
 import categoryRouter from "./routes/categoryRoutes";
+import aiProviderRouter from "./routes/aiProviderRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 
 dotenv.config();
@@ -49,6 +50,7 @@ app.use("/api/data", dataRouter);
 app.use("/api/sheets", sheetRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/categories", categoryRouter);
+app.use("/api/ai-providers", aiProviderRouter);
 
 app.use(errorHandler);
 

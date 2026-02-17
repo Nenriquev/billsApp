@@ -20,6 +20,7 @@ const SKIP_PREFIXES = [
 ];
 
 const TWO_AMOUNTS_RE = /^(.*?)\s*(-?\d[\d.]*,\d{2})\s*EUR\s*(\d[\d.]*,?\d{2})\s*EUR\s*$/;
+const SINGLE_AMOUNT_RE = /^(.+?)(-\d[\d.,]*)\s*EUR\s*$/;
 const DATE_RE = /^(\d{2}\/\d{2}\/\d{4})$/;
 const FECHA_VALOR_RE = /^Fecha valor:/;
 
@@ -30,49 +31,6 @@ function shouldSkipLine(line: string): boolean {
 
 function parseEurAmount(raw: string): number {
   return parseFloat(raw.replace(/\./g, "").replace(",", "."));
-}
-
-/* ────── Santander Credit Card (tarjeta de crédito) ────── */
-
-function parseSantanderCreditCardText(text: string): ParsedLine[] {
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-  const transactions: ParsedLine[] = [];
-  const amountRegex = /^(.+?)\s+(-?[\d.,]+)\s*EUR\s*$/;
-
-  let i = 0;
-  while (i < lines.length) {
-    const dateMatch = lines[i].match(DATE_RE);
-    if (!dateMatch) {
-      i++;
-      continue;
-    }
-
-    const dateStr = dateMatch[1];
-
-    if (i + 1 < lines.length && FECHA_VALOR_RE.test(lines[i + 1])) {
-      if (i + 2 < lines.length) {
-        const txMatch = lines[i + 2].match(amountRegex);
-        if (txMatch) {
-          const concept = txMatch[1].trim();
-          const value = parseEurAmount(txMatch[2]);
-
-          if (!isNaN(value)) {
-            transactions.push({
-              date: moment.tz(dateStr, "DD/MM/YYYY", "UTC").toDate(),
-              concept,
-              value: Math.abs(value),
-            });
-          }
-          i += 3;
-          continue;
-        }
-      }
-    }
-
-    i++;
-  }
-
-  return transactions;
 }
 
 /* ────── Santander Account (cuenta corriente) ────── */
@@ -114,6 +72,16 @@ function parseSantanderAccountText(text: string): ParsedLine[] {
         const conceptBefore = twoAmountsMatch[1].trim();
         if (conceptBefore) conceptParts.push(conceptBefore);
         txAmount = parseEurAmount(twoAmountsMatch[2]);
+        i++;
+        break;
+      }
+
+      // Fallback: single amount format (e.g. "Dcasa-5,90 EUR")
+      const singleAmountMatch = lines[i].match(SINGLE_AMOUNT_RE);
+      if (singleAmountMatch) {
+        const conceptBefore = singleAmountMatch[1].trim();
+        if (conceptBefore) conceptParts.push(conceptBefore);
+        txAmount = parseEurAmount(singleAmountMatch[2]);
         i++;
         break;
       }
@@ -173,7 +141,6 @@ function categorizeTransaction(
 /* ────── Public API ────── */
 
 const PDF_PARSERS: Record<string, (text: string) => ParsedLine[]> = {
-  "santander-credito": parseSantanderCreditCardText,
   "santander-cuenta-pdf": parseSantanderAccountText,
 };
 

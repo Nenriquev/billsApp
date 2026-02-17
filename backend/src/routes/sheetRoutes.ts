@@ -1,10 +1,12 @@
 import { Router } from "express";
 import multer from "multer";
-import { uploadSheet } from "../controllers/sheetController";
+import { uploadSheet, previewSheet, saveSelectedTransactions } from "../controllers/sheetController";
 
 const sheetRouter = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 sheetRouter.post("/upload", upload.single("sheet"), uploadSheet);
+sheetRouter.post("/preview", upload.single("sheet"), previewSheet);
+sheetRouter.post("/save-selected", saveSelectedTransactions);
 
 export default sheetRouter;

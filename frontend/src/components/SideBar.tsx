@@ -1,4 +1,4 @@
-import { IconChartBarPopular, IconReceipt2, IconUpload, IconLayoutDashboard, IconTags } from "@tabler/icons-react";
+import { IconChartBarPopular, IconReceipt2, IconUpload, IconLayoutDashboard, IconTags, IconSettings } from "@tabler/icons-react";
 import { Link, useLocation } from "react-router-dom";
 import styled from "styled-components";
 import Tooltip from "./Tooltip";
@@ -66,6 +66,7 @@ const navItems = [
   { name: "Transacciones", link: "/transactions", icon: <IconReceipt2 /> },
   { name: "Categorías", link: "/categories", icon: <IconTags /> },
   { name: "Subir archivo", link: "/upload", icon: <IconUpload /> },
+  { name: "Configuración", link: "/configuration", icon: <IconSettings /> },
 ];
 
 const SideBar = () => {

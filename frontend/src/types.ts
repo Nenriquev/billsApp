@@ -80,3 +80,32 @@ export interface DropdownOption {
   name: string | number;
   value: string | number;
 }
+
+export interface PreviewTransaction {
+  concept: string;
+  date: string;
+  value: number;
+  category: string;
+  suggestedCategory?: string; // Nombre de la categoría sugerida si no existe en BD
+  bank: string;
+  subcategory?: string | null;
+}
+
+export interface CategorySuggestion {
+  category: string;
+  description: string;
+  transactions: string[];
+  isExisting?: boolean; // Indica si la categoría ya existe en la BD
+}
+
+export interface AIProvider {
+  _id: string;
+  provider: "mistral" | "openai";
+  name: string;
+  model?: string | null;
+  enabled: boolean;
+  isDefault: boolean;
+  apiKey?: string; // Solo primeros caracteres cuando viene del backend
+  createdAt?: string;
+  updatedAt?: string;
+}

@@ -1,7 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { api } from "../../axios/axios";
-import { AnalyticsResponse, Category, DashboardData, Transaction } from "../../types";
+import { AnalyticsResponse, Category, DashboardData, Transaction, PreviewTransaction, CategorySuggestion, AIProvider } from "../../types";
 
 function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
@@ -121,6 +121,47 @@ export const uploadSheet = createAsyncThunk<
   }
 );
 
+export const previewSheet = createAsyncThunk<
+  { transactions: PreviewTransaction[]; categorySuggestions: CategorySuggestion[] },
+  FormData,
+  { rejectValue: string }
+>(
+  "data/previewSheet",
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await api.post<{ transactions: PreviewTransaction[]; categorySuggestions: CategorySuggestion[] }>(
+        "/sheets/preview",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+export const saveSelectedTransactions = createAsyncThunk<
+  { message: string; count: number; categoriesCreated: number },
+  { transactions: PreviewTransaction[]; categoryIds: string[] },
+  { rejectValue: string }
+>(
+  "data/saveSelectedTransactions",
+  async ({ transactions, categoryIds }, { rejectWithValue }) => {
+    try {
+      const response = await api.post("/sheets/save-selected", {
+        transactions,
+        categoryIds,
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
 export const createCategory = createAsyncThunk<
   Category,
   Omit<Category, "_id">,
@@ -163,6 +204,86 @@ export const deleteCategory = createAsyncThunk<
     try {
       await api.delete(`/categories/${id}`);
       return id;
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+export const fetchAIProviders = createAsyncThunk<
+  AIProvider[],
+  void,
+  { rejectValue: string }
+>(
+  "data/fetchAIProviders",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get<AIProvider[]>("/ai-providers");
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+export const createAIProvider = createAsyncThunk<
+  AIProvider,
+  { provider: "mistral" | "openai"; name: string; apiKey: string; model?: string; enabled?: boolean; isDefault?: boolean },
+  { rejectValue: string }
+>(
+  "data/createAIProvider",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await api.post<AIProvider>("/ai-providers", data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+export const updateAIProvider = createAsyncThunk<
+  AIProvider,
+  { id: string; data: Partial<AIProvider> },
+  { rejectValue: string }
+>(
+  "data/updateAIProvider",
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const response = await api.put<AIProvider>(`/ai-providers/${id}`, data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+export const deleteAIProvider = createAsyncThunk<
+  string,
+  string,
+  { rejectValue: string }
+>(
+  "data/deleteAIProvider",
+  async (id, { rejectWithValue }) => {
+    try {
+      await api.delete(`/ai-providers/${id}`);
+      return id;
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
+export const testAIProvider = createAsyncThunk<
+  { valid: boolean },
+  string,
+  { rejectValue: string }
+>(
+  "data/testAIProvider",
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.post<{ valid: boolean }>(`/ai-providers/${id}/test`);
+      return response.data;
     } catch (error) {
       return rejectWithValue(getErrorMessage(error));
     }

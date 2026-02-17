@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { AnalyticsResponse, Category, DashboardData, Transaction } from "../../types";
+import { AnalyticsResponse, Category, DashboardData, Transaction, AIProvider } from "../../types";
 import {
   fetchTransactions,
   fetchCategories,
@@ -10,11 +10,16 @@ import {
   createCategory,
   updateCategory,
   deleteCategory,
+  fetchAIProviders,
+  createAIProvider,
+  updateAIProvider,
+  deleteAIProvider,
 } from "../thunks/dataThunks";
 
 export interface DataState {
   transactions: Transaction[];
   categories: Category[];
+  aiProviders: AIProvider[];
   selectedTransaction: Transaction | null;
   analytics: Record<string, AnalyticsResponse>;
   loadingAnalytics: Record<string, boolean>;
@@ -23,6 +28,7 @@ export interface DataState {
     transactions: boolean;
     categories: boolean;
     dashboard: boolean;
+    aiProviders: boolean;
   };
   dates: {
     from: string;
@@ -40,6 +46,7 @@ const currentMonth = now.getMonth();
 const initialState: DataState = {
   transactions: [],
   categories: [],
+  aiProviders: [],
   selectedTransaction: null,
   analytics: {},
   loadingAnalytics: {},
@@ -48,6 +55,7 @@ const initialState: DataState = {
     transactions: false,
     categories: false,
     dashboard: false,
+    aiProviders: false,
   },
   dates: {
     from: new Date(currentYear, 0, 1).toISOString(),
@@ -158,6 +166,33 @@ const dataSlice = createSlice({
 
       .addCase(deleteCategory.fulfilled, (state, action) => {
         state.categories = state.categories.filter((c) => c._id !== action.payload);
+      })
+
+      .addCase(fetchAIProviders.pending, (state) => {
+        state.loading.aiProviders = true;
+      })
+      .addCase(fetchAIProviders.fulfilled, (state, action) => {
+        state.loading.aiProviders = false;
+        state.aiProviders = action.payload;
+      })
+      .addCase(fetchAIProviders.rejected, (state) => {
+        state.loading.aiProviders = false;
+      })
+
+      .addCase(createAIProvider.fulfilled, (state, action) => {
+        state.aiProviders.push(action.payload);
+      })
+
+      .addCase(updateAIProvider.fulfilled, (state, action) => {
+        const updated = action.payload;
+        const index = state.aiProviders.findIndex((p) => p._id === updated._id);
+        if (index !== -1) {
+          state.aiProviders[index] = updated;
+        }
+      })
+
+      .addCase(deleteAIProvider.fulfilled, (state, action) => {
+        state.aiProviders = state.aiProviders.filter((p) => p._id !== action.payload);
       });
   },
 });

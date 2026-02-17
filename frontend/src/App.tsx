@@ -7,6 +7,7 @@ import Analytics from "./pages/Analytics/Analytics";
 import Transactions from "./pages/Transactions/Transactions";
 import Upload from "./pages/Upload/Upload";
 import CategoriesPage from "./pages/Categories/Categories";
+import Configuration from "./pages/Configuration/Configuration";
 
 const Layout = styled.div`
   display: flex;
@@ -31,6 +32,7 @@ function App() {
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/upload" element={<Upload />} />
           <Route path="/categories" element={<CategoriesPage />} />
+          <Route path="/configuration" element={<Configuration />} />
           <Route path="*" element={<div style={{ padding: 40 }}><h1>404 - Página no encontrada</h1></div>} />
         </Routes>
       </MainContent>
