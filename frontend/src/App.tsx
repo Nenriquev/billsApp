@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import styled from "styled-components";
 import SideBar from "./components/SideBar";
 import Toast from "./components/Toast";
@@ -8,6 +8,10 @@ import Transactions from "./pages/Transactions/Transactions";
 import Upload from "./pages/Upload/Upload";
 import CategoriesPage from "./pages/Categories/Categories";
 import Configuration from "./pages/Configuration/Configuration";
+import Login from "./pages/Auth/Login";
+import Register from "./pages/Auth/Register";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { AuthProvider } from "./context/AuthContext";
 
 const Layout = styled.div`
   display: flex;
@@ -21,7 +25,7 @@ const MainContent = styled.main`
   overflow-y: auto;
 `;
 
-function App() {
+const AuthenticatedLayout = () => {
   return (
     <Layout>
       <SideBar />
@@ -33,11 +37,31 @@ function App() {
           <Route path="/upload" element={<Upload />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/configuration" element={<Configuration />} />
-          <Route path="*" element={<div style={{ padding: 40 }}><h1>404 - Página no encontrada</h1></div>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </MainContent>
-      <Toast />
     </Layout>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <AuthenticatedLayout />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+      <Toast />
+    </AuthProvider>
   );
 }
 

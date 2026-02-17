@@ -7,8 +7,11 @@ import {
   deleteProvider,
   testProvider,
 } from "../controllers/aiProviderController";
+import { verifyToken } from "../middleware/auth";
 
 const aiProviderRouter = Router();
+
+aiProviderRouter.use(verifyToken);
 
 aiProviderRouter.get("/", getAllProviders);
 aiProviderRouter.get("/:id", getProvider);

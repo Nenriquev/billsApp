@@ -5,7 +5,7 @@ import { IconX, IconCheck } from "@tabler/icons-react";
 import { PreviewTransaction, CategorySuggestion } from "../types";
 import { formatDate, formatCurrency } from "../utils/format";
 import { useAppDispatch, useAppSelector } from "../redux/hooks";
-import { saveSelectedTransactions, createCategory, fetchCategories } from "../redux/thunks/dataThunks";
+import { saveSelectedTransactions, createCategory, fetchCategories, fetchTransactions } from "../redux/thunks/dataThunks";
 import { setToast } from "../redux/slices/appSlice";
 
 const Overlay = styled.div`
@@ -465,8 +465,8 @@ const UploadReviewModal = ({
              delete tx.suggestedCategory; // Ignorar sugerencia rechazada
         }
 
-        // 3. Asignar ID de nueva categoría si corresponde
-        if (!tx.category && tx.suggestedCategory && newCategoryMap.has(tx.suggestedCategory)) {
+        // 3. Asignar ID de nueva categoría si corresponde (MÁS PRIORIDAD QUE EL FALLBACK)
+        if (tx.suggestedCategory && newCategoryMap.has(tx.suggestedCategory)) {
           tx.category = newCategoryMap.get(tx.suggestedCategory)!;
         }
         
@@ -480,6 +480,7 @@ const UploadReviewModal = ({
         })
       ).unwrap();
 
+      await dispatch(fetchTransactions());
       await dispatch(fetchCategories());
 
       dispatch(

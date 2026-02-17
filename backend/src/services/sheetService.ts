@@ -14,7 +14,8 @@ const PDF_MIMES = ["application/pdf"];
 
 export async function processFile(
   file: Express.Multer.File,
-  bank: string
+  bank: string,
+  userId: string
 ): Promise<{ count: number }> {
   const isPdf = PDF_MIMES.includes(file.mimetype);
   const isExcel = EXCEL_MIMES.includes(file.mimetype);
@@ -32,7 +33,7 @@ export async function processFile(
   }
 
   if (transactions.length > 0) {
-    await saveTransactions(transactions);
+    await saveTransactions(transactions, userId);
   }
 
   return { count: transactions.length };
@@ -40,7 +41,8 @@ export async function processFile(
 
 export async function previewFile(
   file: Express.Multer.File,
-  bank: string
+  bank: string,
+  userId: string
 ): Promise<ITransaction[]> {
   const isPdf = PDF_MIMES.includes(file.mimetype);
   const isExcel = EXCEL_MIMES.includes(file.mimetype);
@@ -56,29 +58,21 @@ export async function previewFile(
     transactions = await processExcel(file.buffer, bank);
   }
 
-  // Filter out transactions that already exist in the database.
-  // Match by date + value + bank (not concept, since the user may have renamed it).
-  // Handle duplicates: if the PDF has 2 transactions with the same date+value,
-  // and the DB already has 1, only 1 should be shown as new.
   if (transactions.length === 0) return transactions;
 
   const dates = transactions.map((tx) => tx.date);
   const minDate = new Date(Math.min(...dates.map((d) => new Date(d).getTime())));
   const maxDate = new Date(Math.max(...dates.map((d) => new Date(d).getTime())));
 
-  // Optimize query: find unmatched transactions in DB by date range ONLY.
-  // We ignore bank to prevent duplicates if user uploads same data with different bank selection.
   const existingTransactions = await Data.find({
+    user: userId,
     date: { $gte: minDate, $lte: maxDate },
   }).lean();
 
-  // Create a fast lookup map for existing transactions: Date -> Array of values
-  // We use stringified date to ensure consistency
   const existingMap = new Map<string, number[]>();
   
   for (const tx of existingTransactions) {
     if (!tx.date) continue;
-    // Normalize date to ISO string (YYYY-MM-DDTHH:mm:ss.sssZ) for comparison
     const txDate = new Date(tx.date).toISOString();
 
     if (!existingMap.has(txDate)) {
@@ -98,11 +92,8 @@ export async function previewFile(
     let isDuplicate = false;
 
     if (valuesOnDate) {
-      // Check if this specific value exists for this date
       const valueIndex = valuesOnDate.indexOf(tx.value);
       if (valueIndex !== -1) {
-        // It's a match/duplicate!
-        // Remove it from the list to handle multiple transactions with same amount on same day
         valuesOnDate.splice(valueIndex, 1);
         isDuplicate = true;
       }
@@ -137,14 +128,40 @@ async function processExcel(buffer: Buffer, bank: string): Promise<ITransaction[
   return parseBankTransactions(sheetData, bank as "santander" | "bbva");
 }
 
-export async function saveTransactions(transactions: ITransaction[]): Promise<void> {
-  const operations = transactions.map((tx) => ({
-    updateOne: {
-      filter: { concept: tx.concept, date: tx.date, value: tx.value },
-      update: { $setOnInsert: tx },
-      upsert: true,
-    },
-  }));
+export async function saveTransactions(transactions: ITransaction[], userId: string): Promise<void> {
+  const Categories = require("../models/Categories").default;
+  
+  // Find the 'Otros' category for this user
+  let defaultCategory = await Categories.findOne({ category: "Otros", user: userId });
+  
+  // Safety check: if for some reason 'Otros' doesn't exist, use any category or create it
+  if (!defaultCategory) {
+    defaultCategory = await Categories.findOne({ user: userId }) || await Categories.findOne({ category: "Otros" });
+  }
+
+  const defaultCategoryId = defaultCategory?._id;
+
+  const operations = transactions.map((tx) => {
+    const cleanedTx = { ...tx };
+    
+    // If category is empty, null or undefined, use the default one
+    if (!cleanedTx.category || cleanedTx.category === "") {
+      cleanedTx.category = defaultCategoryId;
+    }
+
+    // Strip frontend-only fields that are not in the Mongoose schema
+    delete (cleanedTx as any).suggestedCategory;
+    delete (cleanedTx as any).suggestedSubcategory;
+    delete (cleanedTx as any).isDuplicate; // If present from preview
+
+    return {
+      updateOne: {
+        filter: { concept: cleanedTx.concept, date: cleanedTx.date, value: cleanedTx.value, user: userId },
+        update: { $setOnInsert: { ...cleanedTx, user: userId } },
+        upsert: true,
+      },
+    };
+  });
 
   await Data.bulkWrite(operations);
 }

@@ -97,7 +97,7 @@ export async function parseBankTransactions(
 
   const categories = await Categories.find({}) as unknown as ICategory[];
 
-  const defaultCategory = categories.find((c) => c.category === "Otra categoría");
+  const defaultCategory = categories.find((c) => c.category === "Otros");
   const defaultCategoryId = defaultCategory?._id.toString() || "";
 
   return sheetData

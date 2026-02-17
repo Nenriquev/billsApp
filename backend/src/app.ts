@@ -8,6 +8,7 @@ import sheetRouter from "./routes/sheetRoutes";
 import dashboardRouter from "./routes/dashboardRoutes";
 import categoryRouter from "./routes/categoryRoutes";
 import aiProviderRouter from "./routes/aiProviderRoutes";
+import authRouter from "./routes/authRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 
 dotenv.config();
@@ -46,6 +47,7 @@ app.use(async (_req, res, next) => {
 });
 
 app.get("/", (_req, res) => res.json({ status: "ok", message: "Bills API online" }));
+app.use("/api/auth", authRouter);
 app.use("/api/data", dataRouter);
 app.use("/api/sheets", sheetRouter);
 app.use("/api/dashboard", dashboardRouter);

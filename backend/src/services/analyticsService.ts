@@ -1,3 +1,4 @@
+import mongoose, { Types } from "mongoose";
 import Data from "../models/Data";
 import Categories from "../models/Categories";
 import { AppError, ChartDataset, MonthData } from "../types";
@@ -129,6 +130,7 @@ function buildInvoiceBarChart(
 }
 
 export async function getAnalytics(
+  userId: string,
   categoryName: string,
   from: string,
   to: string
@@ -140,12 +142,17 @@ export async function getAnalytics(
   const fromDate = new Date(from);
   const toDate = new Date(to);
 
-  const categoryDoc = await Categories.findOne({ category: categoryName });
+  const categoryDoc = await Categories.findOne({ 
+    category: categoryName,
+    $or: [{ user: userId }, { user: { $exists: false } }, { user: null }]
+  });
+
   if (!categoryDoc) {
     throw new AppError(`Categoría '${categoryName}' no encontrada`, 404);
   }
 
-  const query = {
+  const query: any = {
+    user: userId,
     category: categoryDoc._id,
     date: { $gte: fromDate, $lte: toDate },
   };
@@ -153,7 +160,7 @@ export async function getAnalytics(
   const [transactions, totalAgg] = await Promise.all([
     Data.find(query).populate("category"),
     Data.aggregate([
-      { $match: query },
+      { $match: { ...query, user: new Types.ObjectId(userId) } },
       { $group: { _id: "$category", totalValue: { $sum: "$value" } } },
     ]),
   ]);

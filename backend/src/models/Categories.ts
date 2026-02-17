@@ -16,6 +16,11 @@ const CategoriesSchema = new Schema({
       types: [String],
     },
   ],
+  user: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    required: false,
+  },
 });
 
 export default mongoose.model("Categories", CategoriesSchema, "categories");

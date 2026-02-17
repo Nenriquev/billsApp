@@ -1,7 +1,8 @@
-import { IconChartBarPopular, IconReceipt2, IconUpload, IconLayoutDashboard, IconTags, IconSettings } from "@tabler/icons-react";
-import { Link, useLocation } from "react-router-dom";
+import { IconChartBarPopular, IconReceipt2, IconUpload, IconLayoutDashboard, IconTags, IconSettings, IconLogout } from "@tabler/icons-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import Tooltip from "./Tooltip";
+import { useAuth } from "../context/AuthContext";
 
 const SideBarWrapper = styled.nav`
   position: fixed;
@@ -31,9 +32,10 @@ const SideBarWrapper = styled.nav`
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex: 1;
   }
 
-  a {
+  a, .logout-btn {
     color: rgba(255, 255, 255, 0.6);
     display: flex;
     justify-content: center;
@@ -42,6 +44,10 @@ const SideBarWrapper = styled.nav`
     border-radius: var(--radius-sm);
     transition: all 0.2s ease;
     text-decoration: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    width: 100%;
 
     svg {
       width: 22px;
@@ -71,6 +77,13 @@ const navItems = [
 
 const SideBar = () => {
   const location = useLocation();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <SideBarWrapper>
@@ -87,6 +100,11 @@ const SideBar = () => {
           </Tooltip>
         ))}
       </div>
+      <Tooltip position="left" text="Cerrar sesión">
+        <button className="logout-btn" onClick={handleLogout}>
+          <IconLogout />
+        </button>
+      </Tooltip>
     </SideBarWrapper>
   );
 };

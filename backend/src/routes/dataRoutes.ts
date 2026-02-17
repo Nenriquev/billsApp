@@ -6,8 +6,11 @@ import {
   updateTransaction,
   deleteTransaction,
 } from "../controllers/dataController";
+import { verifyToken } from "../middleware/auth";
 
 const dataRouter = Router();
+
+dataRouter.use(verifyToken);
 
 dataRouter.get("/", getData);
 dataRouter.get("/categories", getCategories);

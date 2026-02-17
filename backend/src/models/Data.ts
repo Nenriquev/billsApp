@@ -16,8 +16,13 @@ const DataSchema = new Schema({
     type: String,
     default: null,
   },
+  user: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
 });
 
-DataSchema.index({ concept: 1, date: 1, value: 1 }, { unique: true });
+DataSchema.index({ concept: 1, date: 1, value: 1, user: 1 }, { unique: true });
 
 export default mongoose.model("Data", DataSchema, "data");
