@@ -43,11 +43,9 @@ const emptyForm: CategoryForm = {
 /* ────── Styles ────── */
 
 const Page = styled.div`
-  padding: 24px 32px;
   display: flex;
   flex-direction: column;
   gap: 24px;
-  min-height: 100%;
 `;
 
 const Header = styled.div`
