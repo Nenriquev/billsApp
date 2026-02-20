@@ -46,12 +46,21 @@ ${JSON.stringify(transactionsSummary, null, 2)}
 
 INSTRUCCIONES CRÍTICAS:
 1. Debes clasificar TODAS Y CADA UNA de las ${transactionsSummary.length} transacciones. No dejes ninguna sin asignar.
-2. EVITA "Otros": Bajo ninguna circunstancia asignes gastos específicos (como restaurantes, supermercados, servicios, transporte) a la categoría "Otros" si puedes sugerir una categoría nueva más descriptiva.
-3. REGLA DE ORO: Cada transacción debe pertenecer a EXACTAMENTE UNA categoría. No puede aparecer en "assigned" y "new_categories" al mismo tiempo.
+2. EVITA "Otros": Bajo ninguna circunstancia asignes gastos específicos a la categoría "Otros" si puedes sugerir una categoría más descriptiva.
+3. REGLA DE SUBCATEGORÍAS: La subcategoría debe ser un GRUPO GENÉRICO.
+   - LISTA PREFERIDA (u otros grupos genéricos similares): 
+     * 'Restaurantes' (Para: Mcdonalds, Kfc, Burger King, Restaurantes locales, Brunch, Sushi, Pizzerías)
+     * 'Bares y Cafeterías' (Para: Starbucks, Cafés, Pubs, Bares de copas)
+     * 'Delivery' (Para: Uber Eats, Glovo, Just Eat)
+     * 'Suscripciones' (Para: Spotify, Netflix, HBO, Disney+, Gym)
+     * 'Supermercados' (Para: Mercadona, Carrefour, Lidl, Tiendas de barrio)
+     * 'Transporte' (Para: Uber, Cabify, Gasolineras, Parking, Metro, Tren)
+     * 'Servicios' (Para: Agua, Luz, Gas, Internet, Telefonía)
+   - REGLA DE ORO: NUNCA uses el nombre del establecimiento como subcategoría. Si un concepto es una comida/bebida fuera de casa, asígnalo siempre a 'Restaurantes' o 'Bares y Cafeterías'.
 4. Prioridad de Clasificación:
    - A. Busca una coincidencia LÓGICA Y ESPECÍFICA en "CATEGORÍAS EXISTENTES".
-   - B. Si no hay una coincidencia específica (o si la única opción existente es "Otros"), DEBES sugerir una "NUEVA CATEGORÍA" que sea descriptiva (ej: "Alimentación", "Suministros", "Ocio", "Salud").
-5. El output debe ser estrictamente JSON válido con la estructura solicitada.
+   - B. Si no hay, sugiere una "NUEVA CATEGORÍA" descriptiva y usa subcategorías genéricas cuando sea posible.
+5. El output debe ser estrictamente JSON válido.
 
 FORMATO DE RESPUESTA JSON:
 {
@@ -62,7 +71,9 @@ FORMATO DE RESPUESTA JSON:
     {
       "category": "Nombre Nueva Categoría",
       "description": "Razón de la sugerencia",
-      "transactions": ["concepto exacto 1", "concepto exacto 2"]
+      "items": [
+        { "concept": "Concepto exacto", "subcategory": "Subcategoría sugerida o null" }
+      ]
     }
   ]
 }`;
@@ -90,6 +101,9 @@ FORMATO DE RESPUESTA JSON:
       let parsed: { assigned?: any[]; new_categories?: any[] };
       try {
         parsed = JSON.parse(responseContent);
+        console.log("--- AI RESPONSE (MISTRAL) ---");
+        console.log(JSON.stringify(parsed, null, 2));
+        console.log("------------------------------");
       } catch (e) {
         console.error("Error parseando respuesta de Mistral:", e);
         return { suggestedCategories: [], assignedTransactions: [] };

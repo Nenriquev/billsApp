@@ -17,19 +17,90 @@ export interface UpdateCategoryPayload {
 export async function getAllCategories() {
   const categories = await Categories.find({}).sort({ category: 1 });
   
-  // Limpieza automática "on-the-fly" de datos antiguos genéricos (Gasto/expense)
+  // Limpieza automática "on-the-fly" de categorías
   return Promise.all(categories.map(async (cat) => {
-    const originalCount = cat.types.length;
+    let needsSave = false;
     
-    // Filtramos asegurando que name y entry existan antes de comparar
+    // 1. Limpiar tipos genéricos antiguos
     const filteredTypes = cat.types.filter(t => {
       const name = (t.name || "").toLowerCase();
       const entry = (t.entry || "").toLowerCase();
-      return name !== "gasto" && entry !== "expense";
+      return name !== "gasto" && entry !== "expense" && name.trim() !== "";
     });
+    if (cat.types.length !== filteredTypes.length) {
+      cat.types = filteredTypes as any;
+      needsSave = true;
+    }
 
-    if (originalCount !== filteredTypes.length) {
-      cat.types = filteredTypes as any; // Cast controlado para evitar error de DocumentArray
+    // 2. Limpiar subcategorías redundantes y agrupar en genéricas
+    if (cat.subcategories && cat.subcategories.length > 0) {
+      const finalSubs: ISubcategory[] = [];
+      const restaurantAliases = ["restaurantes", "restaurante", "comida", "dinner", "lunch"];
+      const barAliases = ["bares", "cafeterías", "café", "bar", "cafeteria", "drinks"];
+      
+      let targetRest = cat.subcategories.find(s => s.name && restaurantAliases.includes(s.name.toLowerCase()));
+      let targetBar = cat.subcategories.find(s => s.name && barAliases.includes(s.name.toLowerCase()));
+
+      cat.subcategories.forEach(sub => {
+        const subName = (sub.name || "").trim().toLowerCase();
+        if (!subName) return;
+
+        // Detectar si el nombre de la subcategoría es un establecimiento (coincide con sus patrones)
+        const isEstablishment = sub.types.some(t => {
+          const p = t.trim().toLowerCase();
+          return p === subName || p.includes(subName) || subName.includes(p);
+        });
+
+        // Palabras clave para detectar si es de hostelería
+        const isFoodRelated = subName.includes("mcdonald") || subName.includes("burger") || subName.includes("sushi") || subName.includes("pizza") || subName.includes("steak") || subName.includes("restaurante");
+        const isDrinkRelated = subName.includes("bar") || subName.includes("cafe") || subName.includes("coffee") || subName.includes("starbucks");
+
+        if (isEstablishment || isFoodRelated || isDrinkRelated) {
+          let target: any = null;
+          if (isFoodRelated) target = targetRest || null;
+          else if (isDrinkRelated) target = targetBar || null;
+
+          if (target && target.name !== sub.name) {
+            // Mover patrones a la subcategoría genérica
+            sub.types.forEach(t => {
+              if (t && !target!.types.some((p: string) => p.toLowerCase() === t.toLowerCase())) {
+                target!.types.push(t);
+              }
+            });
+            needsSave = true;
+          } else if (isEstablishment) {
+            // Promover a patrones raíz si no hay genérica o es un establecimiento genérico
+            sub.types.forEach(t => {
+              if (t && !cat.types.some(ct => (ct.entry || "").toLowerCase() === t.toLowerCase())) {
+                cat.types.push({ name: t, entry: t.toLowerCase() } as any);
+              }
+            });
+            needsSave = true;
+          } else {
+            finalSubs.push(sub as any);
+          }
+        } else {
+          // Fusionar si ya existe una con el mismo nombre (case insensitive)
+          const existing = finalSubs.find(s => s.name && s.name.toLowerCase() === subName);
+          if (existing) {
+            sub.types.forEach(t => {
+              if (!existing.types.some(p => p.toLowerCase() === t.toLowerCase())) {
+                existing.types.push(t);
+              }
+            });
+            needsSave = true;
+          } else {
+            finalSubs.push(sub as any);
+          }
+        }
+      });
+
+      if (needsSave) {
+        cat.subcategories = finalSubs as any;
+      }
+    }
+
+    if (needsSave) {
       await cat.save().catch(err => console.error("Error al limpiar categoría persistente:", err));
     }
     
@@ -64,16 +135,42 @@ export async function createCategory(data: CreateCategoryPayload) {
   }
 
   // Sanitización proactiva al crear
-  const cleanTypes = (data.types || []).filter(t => {
+  let cleanTypes = (data.types || []).filter(t => {
     const name = (t.name || "").toLowerCase();
     const entry = (t.entry || "").toLowerCase();
-    return name !== "gasto" && entry !== "expense";
+    return name !== "gasto" && entry !== "expense" && name.trim() !== "";
   });
+
+  // Limpieza de subcategorías redundantes
+  const subcategories: ISubcategory[] = [];
+  if (data.subcategories) {
+    data.subcategories.forEach(sub => {
+      const subName = (sub.name || "").trim().toLowerCase();
+      if (!subName) return;
+
+      // Si la subcategoría tiene el mismo nombre que uno de sus patrones, o viceversa
+      const isRedundant = sub.types.some(t => {
+        const pattern = t.trim().toLowerCase();
+        return pattern === subName || pattern.includes(subName) || subName.includes(pattern);
+      });
+
+      if (isRedundant) {
+        // Promovemos los patrones a la categoría raíz
+        sub.types.forEach(t => {
+          if (t && !cleanTypes.some(ct => ct.entry.toLowerCase() === t.toLowerCase())) {
+            cleanTypes.push({ name: t, entry: t.toLowerCase() });
+          }
+        });
+      } else {
+        subcategories.push(sub);
+      }
+    });
+  }
 
   return Categories.create({
     category: data.category.trim(),
     types: cleanTypes,
-    subcategories: data.subcategories || [],
+    subcategories: subcategories,
   });
 }
 
@@ -99,15 +196,42 @@ export async function updateCategory(id: string, data: UpdateCategoryPayload) {
 
   const updateData: Record<string, unknown> = {};
   if (data.category !== undefined) updateData.category = data.category.trim();
-  if (data.types !== undefined) {
-    // Sanitización proactiva al actualizar
-    updateData.types = data.types.filter(t => {
+  
+  let currentTypes = data.types || [];
+  let currentSubs = data.subcategories || [];
+
+  if (data.types !== undefined || data.subcategories !== undefined) {
+    // Sanitización profunda
+    const cleanTypes = currentTypes.filter(t => {
       const name = (t.name || "").toLowerCase();
       const entry = (t.entry || "").toLowerCase();
-      return name !== "gasto" && entry !== "expense";
+      return name !== "gasto" && entry !== "expense" && name.trim() !== "";
     });
+
+    const finalSubs: ISubcategory[] = [];
+    currentSubs.forEach(sub => {
+      const subName = (sub.name || "").trim().toLowerCase();
+      if (!subName) return;
+
+      const isRedundant = sub.types.some(t => {
+        const pattern = t.trim().toLowerCase();
+        return pattern === subName || pattern.includes(subName) || subName.includes(pattern);
+      });
+
+      if (isRedundant) {
+        sub.types.forEach(t => {
+          if (t && !cleanTypes.some(ct => ct.entry.toLowerCase() === t.toLowerCase())) {
+            cleanTypes.push({ name: t, entry: t.toLowerCase() });
+          }
+        });
+      } else {
+        finalSubs.push(sub);
+      }
+    });
+
+    updateData.types = cleanTypes;
+    updateData.subcategories = finalSubs;
   }
-  if (data.subcategories !== undefined) updateData.subcategories = data.subcategories;
 
   const updated = await Categories.findByIdAndUpdate(id, updateData, { new: true });
 

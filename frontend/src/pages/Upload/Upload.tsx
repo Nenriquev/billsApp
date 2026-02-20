@@ -141,17 +141,76 @@ const Upload = () => {
       const newCategoryMap = new Map<string, string>();
       const categoryIds: string[] = [];
       
+      // Listas de alias comunes para agrupación inteligente
+      const restaurantAliases = ["restaurantes", "restaurante", "comida", "dinner", "lunch", "hospitality"];
+      const barAliases = ["bares", "cafeterías", "café", "bar", "cafeteria", "drinks"];
+
+      // Helper para limpiar subcategorías redundantes (que son iguales al concepto)
+      const getCleanSubcategory = (tx: PreviewTransaction) => {
+        if (!tx.subcategory) return null;
+        const concept = tx.concept.toLowerCase().trim();
+        const sub = tx.subcategory.toLowerCase().trim();
+        
+        // 1. Detectar redundancia absoluta o parcial
+        if (sub === concept || concept.includes(sub) || sub.includes(concept)) return null;
+        
+        // 2. Si la subcategoría es muy específica (nombre de local) y no es genérica
+        // pero la IA la sugirió, intentamos ver si podemos agruparla
+        const hospitalityKeywords = ["mcdonald", "burger", "sushi", "pizza", "steak", "kfc", "starbucks", "cafe", "bar"];
+        if (hospitalityKeywords.some(k => sub.includes(k))) return null;
+
+        return tx.subcategory;
+      };
+
+      // Helper para intentar meter conceptos en subcategorías genéricas si ya existen
+      const getFinalSubcategory = (tx: PreviewTransaction, genericRest?: string, genericBar?: string) => {
+        const sub = getCleanSubcategory(tx);
+        if (sub) return sub;
+
+        // Si la subcategoría es nula (limpiada por ser específica), vemos si podemos re-rutarla
+        const concept = tx.concept.toLowerCase();
+        const hospitalityKeywords = ["mcdonald", "burger", "sushi", "pizza", "steak", "kfc", "restaurante", "brunch", "glori", "dine"];
+        const barKeywords = ["starbucks", "cafe", "coffee", "bar", "pub", "copas", "cerveceria"];
+
+        if (genericRest && hospitalityKeywords.some(k => concept.includes(k))) return genericRest;
+        if (genericBar && barKeywords.some(k => concept.includes(k))) return genericBar;
+
+        return null;
+      };
+
       for (const suggestion of suggestions) {
+        // Encontrar si ya existe una subcategoría genérica en esta categoría
+        const existingCat = categories.find(c => c.category === suggestion.category);
+        const genericRest = existingCat?.subcategories.find(s => restaurantAliases.includes(s.name.toLowerCase()))?.name;
+        const genericBar = existingCat?.subcategories.find(s => barAliases.includes(s.name.toLowerCase()))?.name;
         if (!suggestion.isExisting) {
           try {
-            const uniqueConcepts = Array.from(new Set(suggestion.transactions));
+            const subMap = new Map<string, Set<string>>();
+            const rootTypes = new Set<string>();
+
+            suggestion.tempIds?.forEach(id => {
+              const tx = transactions.find(t => t.tempId === id);
+              if (tx) {
+                const sub = getFinalSubcategory(tx, genericRest, genericBar);
+                if (sub) {
+                  if (!subMap.has(sub)) subMap.set(sub, new Set());
+                  subMap.get(sub)!.add(tx.concept);
+                } else {
+                  rootTypes.add(tx.concept);
+                }
+              }
+            });
+
             const result = await dispatch(
               createCategory({
                 category: suggestion.category,
-                types: [],
-                subcategories: uniqueConcepts.map(concept => ({
+                types: Array.from(rootTypes).map(concept => ({
                   name: concept,
-                  types: []
+                  entry: concept.toLowerCase()
+                })),
+                subcategories: Array.from(subMap.entries()).map(([name, concepts]) => ({
+                  name,
+                  types: Array.from(concepts)
                 })),
               })
             ).unwrap();
@@ -162,29 +221,46 @@ const Upload = () => {
             console.error("Error al crear categoría:", err);
           }
         } else {
-          // Si YA EXISTE, comprobamos si hay nuevos conceptos para "aprender"
           const existingCat = categories.find(c => c.category === suggestion.category);
           if (existingCat) {
-            const currentSubNames = new Set(existingCat.subcategories.map(s => s.name.toLowerCase()));
-            const newConcepts = suggestion.transactions.filter(t => !currentSubNames.has(t.toLowerCase()));
-            
-            if (newConcepts.length > 0) {
-              try {
-                // Actualizamos la categoría añadiendo las nuevas subcategorías
-                const updatedSubcategories = [
-                  ...existingCat.subcategories,
-                  ...newConcepts.map(name => ({ name, types: [] }))
-                ];
+            let needsUpdate = false;
+            const updatedSubcategories = existingCat.subcategories.map(s => ({ ...s, types: [...s.types] }));
+            const updatedTypes = existingCat.types.map(t => ({ ...t }));
+
+            suggestion.tempIds?.forEach(txId => {
+              const tx = transactions.find(t => t.tempId === txId);
+              if (!tx) return;
+
+              const subName = getFinalSubcategory(tx, genericRest, genericBar);
+
+              if (subName) {
+                let sub = updatedSubcategories.find(s => s.name.toLowerCase() === subName.toLowerCase());
+                if (!sub) {
+                  sub = { name: subName, types: [] };
+                  updatedSubcategories.push(sub);
+                  needsUpdate = true;
+                }
+                if (!sub.types.some(t => t.toLowerCase() === tx.concept.toLowerCase())) {
+                  sub.types.push(tx.concept);
+                  needsUpdate = true;
+                }
+              } else {
+                // Verificar que no esté ya como patrón global ni como patrón de laguna subcategoría
+                const existsInGlobal = updatedTypes.some(t => t.entry.toLowerCase() === tx.concept.toLowerCase());
+                const existsInSub = updatedSubcategories.some(s => s.types.some(t => t.toLowerCase() === tx.concept.toLowerCase()));
                 
-                await dispatch(
-                  updateCategory({
-                    id: existingCat._id,
-                    data: { subcategories: updatedSubcategories }
-                  })
-                ).unwrap();
-              } catch (err) {
-                console.error("Error al actualizar categoría existente:", err);
+                if (!existsInGlobal && !existsInSub) {
+                  updatedTypes.push({ name: tx.concept, entry: tx.concept.toLowerCase() });
+                  needsUpdate = true;
+                }
               }
+            });
+
+            if (needsUpdate) {
+              await dispatch(updateCategory({
+                id: existingCat._id,
+                data: { subcategories: updatedSubcategories as any, types: updatedTypes as any }
+              })).unwrap();
             }
           }
         }
@@ -192,6 +268,13 @@ const Upload = () => {
 
       const transactionsToSave = transactions.map(tx => {
         const cleanedTx = { ...tx };
+        
+        const suggestion = suggestions.find(s => s.tempIds?.includes(tx.tempId));
+        const existingCategory = categories.find(c => c.category === suggestion?.category);
+        const gRest = existingCategory?.subcategories.find(s => s.name?.toLowerCase() && restaurantAliases.includes(s.name.toLowerCase()))?.name;
+        const gBar = existingCategory?.subcategories.find(s => s.name?.toLowerCase() && barAliases.includes(s.name.toLowerCase()))?.name;
+        
+        cleanedTx.subcategory = getFinalSubcategory(tx, gRest, gBar);
         if (cleanedTx.suggestedCategory && newCategoryMap.has(cleanedTx.suggestedCategory)) {
           cleanedTx.category = newCategoryMap.get(cleanedTx.suggestedCategory)!;
         }

@@ -161,7 +161,16 @@ export async function getDashboard(year: number, month: number, userId: string):
     ]),
   ]);
 
-  const catMap = new Map(categories.map((c) => [c._id.toString(), c.category]));
+  const sampleTx = await Data.findOne({ user: userId });
+  console.log(`--- DASHBOARD DEBUG (User: ${userId}) ---`);
+  console.log(`Sample Transaction:`, sampleTx);
+  console.log(`Period: ${year}-${month} (from ${currentFrom.toISOString()} to ${currentTo.toISOString()})`);
+  console.log(`Year Range: ${yearFrom.toISOString()} to ${yearTo.toISOString()}`);
+  console.log(`Current Total: ${currentTotal}`);
+  console.log(`Year Total Agg (Categories): ${categoryBreakdownAgg.length}`);
+  console.log("-----------------------------------------");
+
+  const catMap = new Map(categories.map((c: any) => [c._id.toString(), c.category]));
 
   const categoryBreakdown: CategorySummary[] = categoryBreakdownAgg
     .filter(item => item.total > 0) // Evitar mostrar categorías vacías

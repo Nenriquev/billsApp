@@ -144,6 +144,15 @@ export async function saveTransactions(transactions: ITransaction[], userId: str
   const operations = transactions.map((tx) => {
     const cleanedTx = { ...tx };
     
+    // Limpieza final de subcategoría redundante
+    if (cleanedTx.subcategory && cleanedTx.concept) {
+      const c = cleanedTx.concept.toLowerCase();
+      const s = cleanedTx.subcategory.toLowerCase();
+      if (s === c || c.includes(s) || s.includes(c)) {
+        cleanedTx.subcategory = null;
+      }
+    }
+
     // If category is empty, null or undefined, use the default one
     if (!cleanedTx.category || cleanedTx.category === "") {
       cleanedTx.category = defaultCategoryId;
@@ -162,6 +171,16 @@ export async function saveTransactions(transactions: ITransaction[], userId: str
       },
     };
   });
+
+  console.log(`--- SAVING ${operations.length} TRANSACTIONS ---`);
+  const summary = operations.slice(0, 5).map(op => ({
+    concept: (op.updateOne.filter as any).concept,
+    cat: (op.updateOne.update as any).$setOnInsert.category,
+    sub: (op.updateOne.update as any).$setOnInsert.subcategory
+  }));
+  console.log("Muestra de datos a guardar:", summary);
+  if (operations.length > 5) console.log(`... y ${operations.length - 5} más.`);
+  console.log("------------------------------------------");
 
   await Data.bulkWrite(operations);
 }

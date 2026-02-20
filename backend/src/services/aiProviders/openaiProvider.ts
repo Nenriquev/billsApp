@@ -46,12 +46,22 @@ ${JSON.stringify(transactionsSummary, null, 2)}
 
 INSTRUCCIONES CRÍTICAS:
 1. Debes clasificar TODAS Y CADA UNA de las ${transactionsSummary.length} transacciones. No puedes dejar ninguna sin asignar.
-2. Para cada transacción:
+2. REGLA DE SUBCATEGORÍAS: La subcategoría debe ser un GRUPO GENÉRICO.
+   - LISTA PREFERIDA (u otros grupos genéricos similares):
+     * 'Restaurantes' (Para: Mcdonalds, Kfc, Burger King, Restaurantes locales, Brunch, Sushi, Pizzerías)
+     * 'Bares y Cafeterías' (Para: Starbucks, Cafés, Pubs, Bares de copas)
+     * 'Delivery' (Para: Uber Eats, Glovo, Just Eat)
+     * 'Suscripciones' (Para: Spotify, Netflix, HBO, Disney+, Gym)
+     * 'Supermercados' (Para: Mercadona, Carrefour, Lidl, Tiendas de barrio)
+     * 'Transporte' (Para: Uber, Cabify, Gasolineras, Parking, Metro, Tren)
+     * 'Servicios' (Para: Agua, Luz, Gas, Internet, Telefonía)
+   - REGLA DE ORO: NUNCA uses el nombre del establecimiento como subcategoría. Si un concepto es una comida/bebida fuera de casa, asígnalo siempre a 'Restaurantes' o 'Bares y Cafeterías'.
+3. Para cada transacción:
    - Primero, busca una coincidencia lógica en "CATEGORÍAS EXISTENTES".
    - Si existe una coincidencia clara, agrégala a la lista "assigned".
    - Si NO existe ninguna categoría adecuada, debes sugerir una "NUEVA CATEGORÍA" y agregar la transacción a la lista "new_categories" bajo esa sugerencia.
-3. Puedes agrupar múltiples transacciones bajo una misma "Nueva Categoría".
-4. El output debe ser estrictamente JSON válido.
+4. Puedes agrupar múltiples transacciones bajo una misma "Nueva Categoría".
+5. El output debe ser estrictamente JSON válido.
 
 FORMATO DE RESPUESTA JSON:
 {
@@ -62,7 +72,9 @@ FORMATO DE RESPUESTA JSON:
     {
       "category": "Nombre Nueva Categoría",
       "description": "Razón de la sugerencia",
-      "transactions": ["concepto exacto 1", "concepto exacto 2"]
+      "items": [
+        { "concept": "Concepto exacto", "subcategory": "Subcategoría sugerida o null" }
+      ]
     }
   ]
 }`;
@@ -87,6 +99,9 @@ FORMATO DE RESPUESTA JSON:
       let parsed: { assigned?: any[]; new_categories?: any[] };
       try {
         parsed = JSON.parse(responseContent);
+        console.log("--- AI RESPONSE (OPENAI) ---");
+        console.log(JSON.stringify(parsed, null, 2));
+        console.log("-----------------------------");
       } catch (e) {
         console.error("Error parseando respuesta de OpenAI:", e);
         return { suggestedCategories: [], assignedTransactions: [] };

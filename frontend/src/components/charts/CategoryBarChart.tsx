@@ -16,7 +16,10 @@ function CategoryBarChart({ data }: CategoryBarChartProps) {
     if (!ref.current) return;
 
     const updateOptions = () => {
-      if (!ref.current || !chartInstance.current) return;
+      if (!ref.current) return;
+      if (!chartInstance.current) {
+        chartInstance.current = echarts.init(ref.current);
+      }
       const chart = chartInstance.current;
       const isMobile = window.innerWidth < 768;
 
