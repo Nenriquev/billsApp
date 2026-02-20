@@ -1,4 +1,4 @@
-import { IconChartBarPopular, IconReceipt2, IconUpload, IconLayoutDashboard, IconSettings, IconLogout } from "@tabler/icons-react";
+import { IconChartBarPopular, IconReceipt2, IconUpload, IconLayoutDashboard, IconSettings, IconLogout, IconX } from "@tabler/icons-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import Tooltip from "./Tooltip";
