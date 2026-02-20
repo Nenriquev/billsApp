@@ -6,7 +6,6 @@ import Home from "./pages/Home/Home";
 import Analytics from "./pages/Analytics/Analytics";
 import Transactions from "./pages/Transactions/Transactions";
 import Upload from "./pages/Upload/Upload";
-import CategoriesPage from "./pages/Categories/Categories";
 import Configuration from "./pages/Configuration/Configuration";
 import Login from "./pages/Auth/Login";
 import Register from "./pages/Auth/Register";
@@ -86,7 +85,6 @@ const AuthenticatedLayout = () => {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/upload" element={<Upload />} />
-          <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/configuration" element={<Configuration />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

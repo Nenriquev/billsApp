@@ -76,6 +76,27 @@ export const getProfile = async (req: any, res: Response) => {
   }
 };
 
+export const updateProfile = async (req: any, res: Response) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: "El nombre es obligatorio" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { name: name.trim() },
+      { new: true }
+    ).select("-password");
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Error updating profile" });
+  }
+};
+
 export const updatePassword = async (req: any, res: Response) => {
     try {
         const { currentPassword, newPassword } = req.body;
