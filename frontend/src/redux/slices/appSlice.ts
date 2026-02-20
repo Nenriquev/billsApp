@@ -12,6 +12,7 @@ import {
 interface AppState {
   toast: ToastState;
   modal: ModalState;
+  sidebarOpen: boolean;
 }
 
 const initialState: AppState = {
@@ -23,6 +24,7 @@ const initialState: AppState = {
   modal: {
     transaction: false,
   },
+  sidebarOpen: false,
 };
 
 const appSlice = createSlice({
@@ -34,6 +36,9 @@ const appSlice = createSlice({
     },
     setModal(state, action: PayloadAction<Partial<ModalState>>) {
       state.modal = { ...state.modal, ...action.payload };
+    },
+    setSidebarOpen(state, action: PayloadAction<boolean>) {
+      state.sidebarOpen = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -99,5 +104,5 @@ const appSlice = createSlice({
   },
 });
 
-export const { setToast, setModal } = appSlice.actions;
+export const { setToast, setModal, setSidebarOpen } = appSlice.actions;
 export const appReducer = appSlice.reducer;

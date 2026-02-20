@@ -26,10 +26,13 @@ interface TooltipProps {
   children: ReactNode;
   position: "left" | "right" | "bottom" | "top";
   text: string;
+  disabled?: boolean;
 }
 
-const Tooltip = ({ children, position, text }: TooltipProps) => {
+const Tooltip = ({ children, position, text, disabled }: TooltipProps) => {
   const [show, setShow] = useState(false);
+
+  if (disabled) return <>{children}</>;
 
   return (
     <Wrapper

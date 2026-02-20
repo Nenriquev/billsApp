@@ -18,6 +18,10 @@ const Page = styled.div`
   flex-direction: column;
   padding: 24px 32px;
 
+  @media (max-width: 1024px) {
+    padding: 20px 16px;
+  }
+
   .header_bar {
     display: flex;
     align-items: center;

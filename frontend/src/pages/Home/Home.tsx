@@ -42,6 +42,11 @@ const Page = styled.div`
   flex-direction: column;
   gap: 24px;
   min-height: 100%;
+
+  @media (max-width: 1024px) {
+    padding: 20px 16px;
+    gap: 16px;
+  }
 `;
 
 const Header = styled.div`
@@ -110,6 +115,10 @@ const KpiCard = styled.div<{ $accent?: string }>`
   .kpi-value {
     font-size: 1.5rem;
     font-weight: 700;
+    
+    @media (max-width: 768px) {
+      font-size: 1.3rem;
+    }
   }
 
   .kpi-comparison {
@@ -320,17 +329,34 @@ const Home = () => {
 
         <ChartCard>
           <h3>Top 10 gastos del año</h3>
-          <TopExpensesList>
-            {(d?.topExpenses ?? []).map((exp, i) => (
-              <div className="expense-row" key={exp.concept}>
-                <div className="rank">{i + 1}</div>
-                <div className="info">
-                  <div className="name">{exp.concept}</div>
-                  <div className="count">{exp.count} transacciones</div>
+          <TopExpensesList style={{ position: "relative", minHeight: 200 }}>
+            {d?.topExpenses && d.topExpenses.length > 0 ? (
+              d.topExpenses.map((exp, i) => (
+                <div className="expense-row" key={exp.concept}>
+                  <div className="rank">{i + 1}</div>
+                  <div className="info">
+                    <div className="name">{exp.concept}</div>
+                    <div className="count">{exp.count} transacciones</div>
+                  </div>
+                  <div className="amount">{formatCurrency(exp.total)}</div>
                 </div>
-                <div className="amount">{formatCurrency(exp.total)}</div>
+              ))
+            ) : (
+              <div
+                style={{
+                  height: "100%",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  color: "#94a3b8",
+                  fontSize: "1rem",
+                  fontWeight: 500,
+                  marginTop: "60px"
+                }}
+              >
+                Sin datos
               </div>
-            ))}
+            )}
           </TopExpensesList>
         </ChartCard>
       </ChartsRow>

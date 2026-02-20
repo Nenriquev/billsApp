@@ -16,57 +16,89 @@ function BarChart({ data, loading, id }: BarChartProps) {
   useEffect(() => {
     if (loading || !chartRef.current) return;
 
-    if (chartInstance.current) {
-      chartInstance.current.dispose();
-      chartInstance.current = null;
+    if (!chartInstance.current) {
+      chartInstance.current = echarts.init(chartRef.current);
     }
 
-    const hasData = data && Object.keys(data).length > 0;
-    if (!hasData) return;
+    const updateOptions = () => {
+      if (!chartRef.current || !chartInstance.current) return;
+      const chart = chartInstance.current;
+      const isMobile = window.innerWidth < 768;
 
-    const chart = echarts.init(chartRef.current);
-    chartInstance.current = chart;
+      const hasData = data && Object.keys(data).length > 0;
+      if (!hasData) {
+        chart.clear();
+        return;
+      }
 
-    const option: echarts.EChartsOption = {
-      grid: {
-        left: "3%",
-        right: "4%",
-        bottom: "3%",
-        containLabel: true,
-      },
-      yAxis: {
-        type: "value",
-        axisLabel: {
-          formatter: (value: number) => `${value.toFixed(0)}€`,
+      // We use 'any' here because data might contain complex ECharts options not fully typed in our local interface
+      const chartData = data as any;
+
+      const option: echarts.EChartsOption = {
+        ...chartData,
+        grid: {
+          left: isMobile ? "2%" : "3%",
+          right: isMobile ? "2%" : "4%",
+          bottom: isMobile ? "2%" : "3%",
+          top: isMobile ? 55 : 60,
+          containLabel: true,
+          ...(chartData.grid || {})
         },
-        splitLine: { lineStyle: { color: "#f1f5f9", type: "dashed" } },
-      },
-      tooltip: {
-        trigger: "item",
-        formatter: (params: unknown) => {
-          const p = params as {
-            seriesName: string;
-            name: string;
-            value: number | Record<string, number>;
-            data: Record<string, number>;
-          };
-          if (typeof p.value === "number") {
-            return `<b>${p.name}</b><br/>${p.value.toFixed(2)} €`;
-          }
-          const val = p.data?.[p.seriesName];
-          return `<span>${p.seriesName}</span><br/><b>${val?.toFixed(2) ?? 0} €</b>`;
+        legend: {
+          show: !isMobile,
+          top: 10,
+          textStyle: { fontSize: 13 },
+          ...(chartData.legend || {})
         },
-      },
-      ...data,
+        yAxis: {
+          type: "value",
+          axisLabel: {
+            fontSize: isMobile ? 11 : 12,
+            verticalAlign: "middle",
+            formatter: (value: number) => `${value.toFixed(0)}€`,
+          },
+          splitLine: { lineStyle: { color: "#f1f5f9", type: "dashed" } },
+          ...(chartData.yAxis || {})
+        },
+        tooltip: {
+          trigger: "item",
+          formatter: (params: unknown) => {
+            const p = params as any;
+            if (typeof p.value === "number") {
+              return `<b>${p.name}</b><br/>${p.value.toFixed(2)} €`;
+            }
+            const val = p.data?.[p.seriesName];
+            return `<span>${p.seriesName}</span><br/><b>${val?.toFixed(2) ?? 0} €</b>`;
+          },
+          ...(chartData.tooltip || {})
+        },
+      };
+
+      const series = chartData.series || [];
+      const source = chartData.dataset?.source || [];
+      const hasValues = series.some((s: any) => s.data?.some((v: any) => v !== 0 && v !== null)) || 
+                       source.some((obj: any) => Object.values(obj).some(v => typeof v === 'number' && v !== 0));
+
+      if (!hasValues) {
+        chart.clear();
+      } else {
+        chart.setOption(option, true);
+      }
     };
 
-    chart.setOption(option, true);
+    updateOptions();
 
-    const handleResize = () => chart.resize();
-    window.addEventListener("resize", handleResize);
+    const resizeObserver = new ResizeObserver(() => {
+        chartInstance.current?.resize();
+        updateOptions();
+    });
+    
+    if (chartRef.current) {
+      resizeObserver.observe(chartRef.current);
+    }
 
     return () => {
-      window.removeEventListener("resize", handleResize);
+      resizeObserver.disconnect();
     };
   }, [data, loading]);
 
@@ -79,25 +111,58 @@ function BarChart({ data, loading, id }: BarChartProps) {
     };
   }, []);
 
+  const chartData = (data as any) || {};
+  const series = chartData.series || [];
+  const source = chartData.dataset?.source || [];
+
+  const hasValues = series.some((s: any) => s.data?.some((v: any) => v !== 0 && v !== null)) || 
+                   source.some((obj: any) => Object.values(obj).some(v => typeof v === 'number' && v !== 0));
+
+  const hasNoData = !loading && (Object.keys(chartData).length === 0 || !hasValues);
+
   return (
     <div style={{ width: "100%", height: "100%", position: "relative" }}>
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: loading ? "flex" : "none",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Loader />
-      </div>
+      {loading && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            background: "var(--bg-card)",
+            zIndex: 11
+          }}
+        >
+          <Loader />
+        </div>
+      )}
       <div
         id={id}
         ref={chartRef}
         className="chart"
-        style={{ display: loading ? "none" : "block" }}
+        style={{ width: "100%", height: "100%" }}
       />
+      {hasNoData && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            color: "#94a3b8",
+            fontSize: "1rem",
+            fontWeight: 500,
+            pointerEvents: "none",
+            zIndex: 10,
+            background: "transparent"
+          }}
+        >
+          Sin datos
+        </div>
+      )}
     </div>
   );
 }

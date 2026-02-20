@@ -5,8 +5,9 @@ export const getDashboardData = async (req: Request, res: Response, next: NextFu
   try {
     const year = parseInt(req.query.year as string) || new Date().getFullYear();
     const month = parseInt(req.query.month as string) ?? new Date().getMonth();
+    const userId = (req as any).user.id;
 
-    const data = await getDashboard(year, month);
+    const data = await getDashboard(year, month, userId);
     return res.json(data);
   } catch (error) {
     next(error);

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { api } from "../../axios/axios";
-import { useAuth } from "../../context/AuthContext";
+import { useAppDispatch } from "../../redux/hooks";
+import { setToast } from "../../redux/slices/appSlice";
 import { IconLock, IconMail, IconUser } from "@tabler/icons-react";
 
 // Reusing styles from Login - in a real app these should be shared components
@@ -99,6 +100,12 @@ const ErrorMsg = styled.div`
   border-radius: var(--radius-sm);
 `;
 
+const FieldError = styled.div`
+  color: var(--danger);
+  font-size: 12px;
+  margin-top: 4px;
+`;
+
 const Footer = styled.p`
   margin-top: 24px;
   text-align: center;
@@ -120,20 +127,61 @@ const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ 
+    name?: string; 
+    email?: string; 
+    password?: string; 
+    confirmPassword?: string;
+  }>({});
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+
+  const validate = () => {
+    const errors: { 
+      name?: string; 
+      email?: string; 
+      password?: string; 
+      confirmPassword?: string;
+    } = {};
+
+    if (!name) errors.name = "El nombre es obligatorio";
+    
+    if (!email) {
+      errors.email = "El email es obligatorio";
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = "Email no válido";
+    }
+
+    if (!password) {
+      errors.password = "La contraseña es obligatoria";
+    } else if (password.length < 6) {
+      errors.password = "Mínimo 6 caracteres";
+    }
+
+    if (password !== confirmPassword) {
+      errors.confirmPassword = "Las contraseñas no coinciden";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
+
+    if (!validate()) return;
+
     setLoading(true);
 
     try {
       const { data } = await api.post("/auth/register", { name, email, password });
-      login(data.token, data.user);
-      navigate("/");
+      dispatch(setToast({ open: true, msg: data.message, type: "success" }));
+      navigate("/login");
     } catch (err: any) {
       setError(err.response?.data?.message || "Error al registrarse");
     } finally {
@@ -146,7 +194,7 @@ const Register = () => {
       <AuthCard>
         <h2>Crear Cuenta</h2>
         {error && <ErrorMsg>{error}</ErrorMsg>}
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           <FormGroup>
             <label>Nombre</label>
             <div className="input-wrapper">
@@ -155,10 +203,10 @@ const Register = () => {
                 type="text" 
                 value={name} 
                 onChange={(e) => setName(e.target.value)} 
-                required 
                 placeholder="Tu nombre"
               />
             </div>
+            {fieldErrors.name && <FieldError>{fieldErrors.name}</FieldError>}
           </FormGroup>
 
           <FormGroup>
@@ -169,10 +217,10 @@ const Register = () => {
                 type="email" 
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
-                required 
                 placeholder="tu@email.com"
               />
             </div>
+            {fieldErrors.email && <FieldError>{fieldErrors.email}</FieldError>}
           </FormGroup>
           
           <FormGroup>
@@ -183,11 +231,24 @@ const Register = () => {
                 type="password" 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
-                required 
                 placeholder="••••••••"
-                minLength={6}
               />
             </div>
+            {fieldErrors.password && <FieldError>{fieldErrors.password}</FieldError>}
+          </FormGroup>
+
+          <FormGroup>
+            <label>Confirmar Contraseña</label>
+            <div className="input-wrapper">
+              <IconLock size={20} />
+              <input 
+                type="password" 
+                value={confirmPassword} 
+                onChange={(e) => setConfirmPassword(e.target.value)} 
+                placeholder="••••••••"
+              />
+            </div>
+            {fieldErrors.confirmPassword && <FieldError>{fieldErrors.confirmPassword}</FieldError>}
           </FormGroup>
           
           <Button type="submit" disabled={loading}>

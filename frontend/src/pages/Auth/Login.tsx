@@ -99,6 +99,12 @@ const ErrorMsg = styled.div`
   border-radius: var(--radius-sm);
 `;
 
+const FieldError = styled.div`
+  color: var(--danger);
+  font-size: 12px;
+  margin-top: 4px;
+`;
+
 const Footer = styled.p`
   margin-top: 24px;
   text-align: center;
@@ -120,13 +126,32 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const validate = () => {
+    const errors: { email?: string; password?: string } = {};
+    if (!email) {
+      errors.email = "El email es obligatorio";
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = "Email no válido";
+    }
+    if (!password) {
+      errors.password = "La contraseña es obligatoria";
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
+
+    if (!validate()) return;
+
     setLoading(true);
 
     try {
@@ -145,7 +170,7 @@ const Login = () => {
       <AuthCard>
         <h2>Bienvenido de nuevo</h2>
         {error && <ErrorMsg>{error}</ErrorMsg>}
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           <FormGroup>
             <label>Email</label>
             <div className="input-wrapper">
@@ -154,10 +179,10 @@ const Login = () => {
                 type="email" 
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
-                required 
                 placeholder="tu@email.com"
               />
             </div>
+            {fieldErrors.email && <FieldError>{fieldErrors.email}</FieldError>}
           </FormGroup>
           
           <FormGroup>
@@ -168,10 +193,10 @@ const Login = () => {
                 type="password" 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
-                required 
                 placeholder="••••••••"
               />
             </div>
+            {fieldErrors.password && <FieldError>{fieldErrors.password}</FieldError>}
           </FormGroup>
           
           <Button type="submit" disabled={loading}>

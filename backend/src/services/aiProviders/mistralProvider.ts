@@ -35,7 +35,7 @@ export class MistralProvider implements AIProvider {
       subcategories: c.subcategories.map((s) => s.name),
     }));
 
-    const prompt = `Actúa como un analista financiero experto. Tu tarea es organizar TODAS las transacciones bancarias proporcionadas.
+    const prompt = `Actúa como un analista financiero experto. Tu tarea es organizar TODAS las transacciones bancarias proporcionadas de forma inteligente y detallada.
 
 CONTEXTO:
 Aquí están las CATEGORÍAS EXISTENTES del usuario:
@@ -45,13 +45,13 @@ Aquí están las NUEVAS TRANSACCIONES a organizar (${transactionsSummary.length}
 ${JSON.stringify(transactionsSummary, null, 2)}
 
 INSTRUCCIONES CRÍTICAS:
-1. Debes clasificar TODAS Y CADA UNA de las ${transactionsSummary.length} transacciones. No puedes dejar ninguna sin asignar.
-2. Para cada transacción:
-   - Primero, busca una coincidencia lógica en "CATEGORÍAS EXISTENTES".
-   - Si existe una coincidencia clara, agrégala a la lista "assigned".
-   - Si NO existe ninguna categoría adecuada, debes sugerir una "NUEVA CATEGORÍA" y agregar la transacción a la lista "new_categories" bajo esa sugerencia.
-3. Puedes agrupar múltiples transacciones bajo una misma "Nueva Categoría".
-4. El output debe ser estrictamente JSON válido con la estructura solicitada.
+1. Debes clasificar TODAS Y CADA UNA de las ${transactionsSummary.length} transacciones. No dejes ninguna sin asignar.
+2. EVITA "Otros": Bajo ninguna circunstancia asignes gastos específicos (como restaurantes, supermercados, servicios, transporte) a la categoría "Otros" si puedes sugerir una categoría nueva más descriptiva.
+3. REGLA DE ORO: Cada transacción debe pertenecer a EXACTAMENTE UNA categoría. No puede aparecer en "assigned" y "new_categories" al mismo tiempo.
+4. Prioridad de Clasificación:
+   - A. Busca una coincidencia LÓGICA Y ESPECÍFICA en "CATEGORÍAS EXISTENTES".
+   - B. Si no hay una coincidencia específica (o si la única opción existente es "Otros"), DEBES sugerir una "NUEVA CATEGORÍA" que sea descriptiva (ej: "Alimentación", "Suministros", "Ocio", "Salud").
+5. El output debe ser estrictamente JSON válido con la estructura solicitada.
 
 FORMATO DE RESPUESTA JSON:
 {

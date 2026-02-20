@@ -21,6 +21,11 @@ const Page = styled.div`
   display: flex;
   flex-direction: column;
   gap: 24px;
+
+  @media (max-width: 1024px) {
+    padding: 20px 16px;
+    gap: 16px;
+  }
 `;
 
 const Header = styled.div`
@@ -35,25 +40,29 @@ const Header = styled.div`
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
-const Card = styled.div`
+const Card = styled.div<{ isLast?: boolean }>`
   position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 380px;
+  height: 400px;
   background: var(--bg-card);
   border-radius: var(--radius);
   overflow: hidden;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
   padding: 10px 0;
-  transition: box-shadow 0.2s;
+  transition: all 0.2s ease;
 
-  &:hover { box-shadow: var(--shadow-md); }
+  grid-column: ${({ isLast }) => (isLast ? "1 / -1" : "auto")};
 
   .head {
     position: absolute;
@@ -64,13 +73,28 @@ const Card = styled.div`
     padding: 0 24px;
     width: 100%;
     z-index: 1;
+    pointer-events: none;
 
-    h3 { font-size: 0.95rem; }
+    h3 { 
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-base);
+      pointer-events: auto;
+
+      @media (max-width: 768px) {
+        font-size: 0.9rem;
+      }
+    }
 
     .total {
-      font-size: 1.3rem;
+      font-size: 1.5rem;
       font-weight: 700;
       color: var(--accent);
+      pointer-events: auto;
+
+      @media (max-width: 768px) {
+        font-size: 1.1rem;
+      }
     }
   }
 
@@ -78,7 +102,11 @@ const Card = styled.div`
     position: absolute;
     bottom: 10px;
     width: 100%;
-    height: calc(100% - 50px);
+    height: calc(100% - 75px);
+
+    @media (max-width: 768px) {
+      height: calc(100% - 85px);
+    }
   }
 `;
 
@@ -125,8 +153,8 @@ const Analytics = () => {
       </Header>
 
       <Grid>
-        {items.map(({ key, data, loading }) => (
-          <Card key={key}>
+        {items.map(({ key, data, loading }, index) => (
+          <Card key={key} isLast={index === items.length - 1}>
             <div className="head">
               <h3>{key}</h3>
               {data?.total != null && data.total > 0 && (

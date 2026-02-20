@@ -82,11 +82,12 @@ export interface DropdownOption {
 }
 
 export interface PreviewTransaction {
+  tempId?: string; // ID temporal para el frontend
   concept: string;
   date: string;
   value: number;
-  category: string;
-  suggestedCategory?: string; // Nombre de la categoría sugerida si no existe en BD
+  category?: string; // Ahora es opcional
+  suggestedCategory?: string;
   bank: string;
   subcategory?: string | null;
 }
@@ -95,7 +96,8 @@ export interface CategorySuggestion {
   category: string;
   description: string;
   transactions: string[];
-  isExisting?: boolean; // Indica si la categoría ya existe en la BD
+  tempIds?: string[]; // IDs temporales de las transacciones agrupadas
+  isExisting?: boolean;
 }
 
 export interface AIProvider {

@@ -15,7 +15,26 @@ export interface UpdateCategoryPayload {
 }
 
 export async function getAllCategories() {
-  return Categories.find({}).sort({ category: 1 });
+  const categories = await Categories.find({}).sort({ category: 1 });
+  
+  // Limpieza automática "on-the-fly" de datos antiguos genéricos (Gasto/expense)
+  return Promise.all(categories.map(async (cat) => {
+    const originalCount = cat.types.length;
+    
+    // Filtramos asegurando que name y entry existan antes de comparar
+    const filteredTypes = cat.types.filter(t => {
+      const name = (t.name || "").toLowerCase();
+      const entry = (t.entry || "").toLowerCase();
+      return name !== "gasto" && entry !== "expense";
+    });
+
+    if (originalCount !== filteredTypes.length) {
+      cat.types = filteredTypes as any; // Cast controlado para evitar error de DocumentArray
+      await cat.save().catch(err => console.error("Error al limpiar categoría persistente:", err));
+    }
+    
+    return cat;
+  }));
 }
 
 export async function getCategoryById(id: string) {
@@ -44,9 +63,16 @@ export async function createCategory(data: CreateCategoryPayload) {
     throw new AppError(`La categoría '${data.category}' ya existe`, 409);
   }
 
+  // Sanitización proactiva al crear
+  const cleanTypes = (data.types || []).filter(t => {
+    const name = (t.name || "").toLowerCase();
+    const entry = (t.entry || "").toLowerCase();
+    return name !== "gasto" && entry !== "expense";
+  });
+
   return Categories.create({
     category: data.category.trim(),
-    types: data.types || [],
+    types: cleanTypes,
     subcategories: data.subcategories || [],
   });
 }
@@ -73,7 +99,14 @@ export async function updateCategory(id: string, data: UpdateCategoryPayload) {
 
   const updateData: Record<string, unknown> = {};
   if (data.category !== undefined) updateData.category = data.category.trim();
-  if (data.types !== undefined) updateData.types = data.types;
+  if (data.types !== undefined) {
+    // Sanitización proactiva al actualizar
+    updateData.types = data.types.filter(t => {
+      const name = (t.name || "").toLowerCase();
+      const entry = (t.entry || "").toLowerCase();
+      return name !== "gasto" && entry !== "expense";
+    });
+  }
   if (data.subcategories !== undefined) updateData.subcategories = data.subcategories;
 
   const updated = await Categories.findByIdAndUpdate(id, updateData, { new: true });

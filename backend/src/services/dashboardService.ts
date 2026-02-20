@@ -62,15 +62,18 @@ function getMonthRange(year: number, month: number) {
   return { from, to };
 }
 
-async function getTotalForPeriod(from: Date, to: Date): Promise<number> {
+async function getTotalForPeriod(from: Date, to: Date, userId: string): Promise<number> {
   const result = await Data.aggregate([
-    { $match: { date: { $gte: from, $lte: to } } },
+    { $match: { 
+      user: new Types.ObjectId(userId),
+      date: { $gte: from, $lte: to } 
+    } },
     { $group: { _id: null, total: { $sum: "$value" } } },
   ]);
   return result.length > 0 ? Number(result[0].total.toFixed(2)) : 0;
 }
 
-export async function getDashboard(year: number, month: number): Promise<DashboardData> {
+export async function getDashboard(year: number, month: number, userId: string): Promise<DashboardData> {
   const { from: currentFrom, to: currentTo } = getMonthRange(year, month);
 
   const prevMonth = month === 0 ? 11 : month - 1;
@@ -92,12 +95,17 @@ export async function getDashboard(year: number, month: number): Promise<Dashboa
     topExpensesAgg,
     monthlyCategoryAgg,
   ] = await Promise.all([
-    getTotalForPeriod(currentFrom, currentTo),
-    getTotalForPeriod(prevMonthFrom, prevMonthTo),
-    getTotalForPeriod(lastYearFrom, lastYearTo),
-    Categories.find({}),
+    getTotalForPeriod(currentFrom, currentTo, userId),
+    getTotalForPeriod(prevMonthFrom, prevMonthTo, userId),
+    getTotalForPeriod(lastYearFrom, lastYearTo, userId),
+    Categories.find({
+      $or: [{ user: userId }, { user: { $exists: false } }, { user: null }]
+    }),
     Data.aggregate([
-      { $match: { date: { $gte: yearFrom, $lte: yearTo } } },
+      { $match: { 
+        user: new Types.ObjectId(userId),
+        date: { $gte: yearFrom, $lte: yearTo } 
+      } },
       {
         $group: {
           _id: "$category",
@@ -108,7 +116,10 @@ export async function getDashboard(year: number, month: number): Promise<Dashboa
       { $sort: { total: -1 } },
     ]),
     Data.aggregate([
-      { $match: { date: { $gte: yearFrom, $lte: yearTo } } },
+      { $match: { 
+        user: new Types.ObjectId(userId),
+        date: { $gte: yearFrom, $lte: yearTo } 
+      } },
       {
         $group: {
           _id: { year: { $year: "$date" }, month: { $month: "$date" } },
@@ -118,7 +129,10 @@ export async function getDashboard(year: number, month: number): Promise<Dashboa
       { $sort: { "_id.month": 1 } },
     ]),
     Data.aggregate([
-      { $match: { date: { $gte: yearFrom, $lte: yearTo } } },
+      { $match: { 
+        user: new Types.ObjectId(userId),
+        date: { $gte: yearFrom, $lte: yearTo } 
+      } },
       {
         $group: {
           _id: "$concept",
@@ -130,7 +144,10 @@ export async function getDashboard(year: number, month: number): Promise<Dashboa
       { $limit: 10 },
     ]),
     Data.aggregate([
-      { $match: { date: { $gte: yearFrom, $lte: yearTo } } },
+      { $match: { 
+        user: new Types.ObjectId(userId),
+        date: { $gte: yearFrom, $lte: yearTo } 
+      } },
       {
         $group: {
           _id: {
@@ -146,16 +163,18 @@ export async function getDashboard(year: number, month: number): Promise<Dashboa
 
   const catMap = new Map(categories.map((c) => [c._id.toString(), c.category]));
 
-  const categoryBreakdown: CategorySummary[] = categoryBreakdownAgg.map((item) => {
-    const catName = catMap.get(item._id?.toString()) || "Sin categoría";
-    return {
-      categoryId: item._id?.toString() || "",
-      category: catName,
-      total: Number(item.total.toFixed(2)),
-      count: item.count,
-      color: CATEGORY_COLORS[catName] || "#6b7280",
-    };
-  });
+  const categoryBreakdown: CategorySummary[] = categoryBreakdownAgg
+    .filter(item => item.total > 0) // Evitar mostrar categorías vacías
+    .map((item) => {
+      const catName = catMap.get(item._id?.toString()) || "Sin categoría";
+      return {
+        categoryId: item._id?.toString() || "",
+        category: catName,
+        total: Number(item.total.toFixed(2)),
+        count: item.count,
+        color: CATEGORY_COLORS[catName] || "#6b7280",
+      };
+    });
 
   const yearTotal = categoryBreakdown.reduce((sum, c) => sum + c.total, 0);
   const yearCount = categoryBreakdown.reduce((sum, c) => sum + c.count, 0);
@@ -205,6 +224,7 @@ export async function getDashboard(year: number, month: number): Promise<Dashboa
         data: data.slice(0, month + 1),
         color: CATEGORY_COLORS[name] || "#6b7280",
       }))
+      .filter((s) => s.data.some(val => val > 0)) // Solo mostrar si hay algún valor > 0
       .sort((a, b) => {
         const sumA = a.data.reduce((s, v) => s + v, 0);
         const sumB = b.data.reduce((s, v) => s + v, 0);

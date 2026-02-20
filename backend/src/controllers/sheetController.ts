@@ -45,34 +45,42 @@ export const previewSheet = async (req: Request, res: Response, next: NextFuncti
     // Procesar archivo sin guardar
     const transactions = await previewFile(file, body.bank, userId);
 
+    // Añadir tempId único para manejo en el frontend
+    const previewTransactions = transactions.map((tx, idx) => ({
+      ...tx,
+      tempId: `tx_${Date.now()}_${idx}`
+    }));
+
     // Obtener categorías (propias + globales)
     const categories = (await Categories.find({
       $or: [{ user: userId }, { user: { $exists: false } }, { user: null }]
     })) as unknown as ICategory[];
 
     // Obtener análisis de IA (asignaciones + sugerencias nuevas)
-    const analysis = await suggestCategories(transactions, categories);
+    const analysis = await suggestCategories(previewTransactions, categories);
 
-    // (Logic for applying AI assignments remains same...)
     if (analysis.assignedTransactions && analysis.assignedTransactions.length > 0) {
-      const assignmentMap = new Map(
-        analysis.assignedTransactions.map((a) => [a.concept, a])
-      );
-
+      const assignedTempIds = new Set<string>();
+      
       const suggestionsMap = new Map<string, any>();
       analysis.suggestedCategories.forEach((s) => {
-        suggestionsMap.set(s.category, s);
+        suggestionsMap.set(s.category, { ...s, transactions: [], tempIds: [] });
       });
 
-      transactions.forEach((tx) => {
-        const assignment = assignmentMap.get(tx.concept);
-        if (assignment) {
-          const matchedCategory = categories.find(
-            (c) => c.category === assignment.category
-          );
+      // 1. Procesar asignaciones a categorías EXISTENTES
+      analysis.assignedTransactions.forEach((assignment) => {
+        // Encontrar la transacción por concepto (limitación: el concepto podría repetirse)
+        // Buscamos una que no haya sido asignada aún
+        const tx = previewTransactions.find(
+          (t) => t.concept === assignment.concept && !assignedTempIds.has(t.tempId!)
+        );
+
+        if (tx) {
+          const matchedCategory = categories.find((c) => c.category === assignment.category);
           if (matchedCategory) {
             tx.category = matchedCategory._id.toString();
             tx.subcategory = assignment.subcategory || null;
+            assignedTempIds.add(tx.tempId!);
 
             let suggestion = suggestionsMap.get(assignment.category);
             if (!suggestion) {
@@ -80,51 +88,63 @@ export const previewSheet = async (req: Request, res: Response, next: NextFuncti
                 category: assignment.category,
                 description: "Categoría existente identificada",
                 transactions: [],
+                tempIds: [],
                 isExisting: true,
               };
-              analysis.suggestedCategories.push(suggestion);
               suggestionsMap.set(assignment.category, suggestion);
             }
-
-            if (!suggestion.transactions.includes(tx.concept)) {
-              suggestion.transactions.push(tx.concept);
-            }
-          } else {
-            (tx as any).suggestedCategory = assignment.category;
-            if (assignment.subcategory) {
-               (tx as any).suggestedSubcategory = assignment.subcategory;
-            }
-
-            let suggestion = suggestionsMap.get(assignment.category);
-            if (!suggestion) {
-              suggestion = {
-                category: assignment.category,
-                description: "Categoría sugerida basada en análisis de IA",
-                transactions: [],
-              };
-              analysis.suggestedCategories.push(suggestion);
-              suggestionsMap.set(assignment.category, suggestion);
-            }
-
-            if (!suggestion.transactions.includes(tx.concept)) {
-              suggestion.transactions.push(tx.concept);
-            }
+            suggestion.transactions.push(tx.concept);
+            suggestion.tempIds.push(tx.tempId);
           }
         }
       });
 
+      // 2. Procesar asignaciones a categorías NUEVAS
       analysis.suggestedCategories.forEach((suggestion) => {
-        suggestion.transactions.forEach((conceptName) => {
-          const tx = transactions.find((t) => t.concept === conceptName);
-          if (tx && !tx.category && !((tx as any).suggestedCategory)) {
-             (tx as any).suggestedCategory = suggestion.category;
+        let fullSuggestion = suggestionsMap.get(suggestion.category);
+        
+        // Verificación extra: ¿Realmente es nueva o la IA se saltó una existente?
+        const existingMatch = categories.find(c => 
+          c.category.toLowerCase() === suggestion.category.toLowerCase()
+        );
+
+        if (existingMatch && fullSuggestion) {
+          fullSuggestion.isExisting = true;
+          // Actualizamos el nombre al oficial de la DB para evitar discrepancias de mayúsculas
+          fullSuggestion.category = existingMatch.category;
+          suggestion.category = existingMatch.category;
+        }
+
+        suggestion.transactions.forEach((concept) => {
+          const tx = previewTransactions.find(
+            (t) => t.concept === concept && !assignedTempIds.has(t.tempId!)
+          );
+
+          if (tx) {
+            // Si existe en la DB, asignamos directamente el ID
+            if (existingMatch) {
+              tx.category = existingMatch._id.toString();
+            } else {
+              (tx as any).suggestedCategory = suggestion.category;
+            }
+            
+            assignedTempIds.add(tx.tempId!);
+            if (fullSuggestion) {
+              fullSuggestion.transactions.push(tx.concept);
+              fullSuggestion.tempIds.push(tx.tempId);
+            }
           }
         });
       });
+
+      // Actualizar la lista final de sugerencias con las filtradas
+      analysis.suggestedCategories = Array.from(suggestionsMap.values()).filter(
+        (s) => s.transactions.length > 0
+      );
     }
 
     return res.json({
-      transactions,
+      transactions: previewTransactions,
       categorySuggestions: analysis.suggestedCategories,
     });
   } catch (error) {
