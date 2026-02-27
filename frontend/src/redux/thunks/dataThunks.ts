@@ -71,6 +71,22 @@ export const fetchDashboard = createAsyncThunk<
   }
 );
 
+export const createTransaction = createAsyncThunk<
+  Transaction,
+  Omit<Transaction, "_id">,
+  { rejectValue: string }
+>(
+  "data/createTransaction",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await api.post<Transaction>("/data", data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
+    }
+  }
+);
+
 export const updateTransaction = createAsyncThunk<
   Transaction,
   { id: string; data: Partial<Transaction> },

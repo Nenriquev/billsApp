@@ -4,7 +4,7 @@ export interface ITransaction {
   concept: string;
   date: Date;
   value: number;
-  category: Types.ObjectId | string;
+  category: Types.ObjectId | string | null;
   bank: string;
   subcategory?: string | null;
 }

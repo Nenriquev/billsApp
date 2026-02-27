@@ -7,6 +7,15 @@ export async function getAllTransactions(userId: string) {
   return Data.find({ user: userId }).populate("category").sort({ date: -1 });
 }
 
+export async function createTransaction(userId: string, data: Partial<ITransaction>) {
+  const transaction = new Data({
+    ...data,
+    user: userId,
+  });
+  await transaction.save();
+  return transaction.populate("category");
+}
+
 export async function getAllCategories(userId: string) {
   return Categories.find({ 
     $or: [{ user: userId }, { user: { $exists: false } }, { user: null }] 

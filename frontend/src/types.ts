@@ -1,8 +1,18 @@
+export interface CategoryTypeEntry {
+  name: string;
+  entry: string;
+}
+
+export interface SubcategoryEntry {
+  name: string;
+  types: string[];
+}
+
 export interface Category {
   _id: string;
   category: string;
-  types: { name: string; entry: string }[];
-  subcategories: { name: string; types: string[] }[];
+  types: CategoryTypeEntry[];
+  subcategories: SubcategoryEntry[];
 }
 
 export interface Transaction {
@@ -10,7 +20,7 @@ export interface Transaction {
   concept: string;
   date: string;
   value: number;
-  category: Category;
+  category?: Category | null;
   bank: string;
   subcategory?: string | null;
 }

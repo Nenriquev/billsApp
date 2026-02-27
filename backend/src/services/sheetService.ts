@@ -128,19 +128,7 @@ async function processExcel(buffer: Buffer, bank: string): Promise<ITransaction[
   return parseBankTransactions(sheetData, bank as "santander" | "bbva");
 }
 
-export async function saveTransactions(transactions: ITransaction[], userId: string): Promise<void> {
-  const Categories = require("../models/Categories").default;
-  
-  // Find the 'Otros' category for this user
-  let defaultCategory = await Categories.findOne({ category: "Otros", user: userId });
-  
-  // Safety check: if for some reason 'Otros' doesn't exist, use any category or create it
-  if (!defaultCategory) {
-    defaultCategory = await Categories.findOne({ user: userId }) || await Categories.findOne({ category: "Otros" });
-  }
-
-  const defaultCategoryId = defaultCategory?._id;
-
+export async function saveTransactions(transactions: ITransaction[], userId: string): Promise<void> {    
   const operations = transactions.map((tx) => {
     const cleanedTx = { ...tx };
     
@@ -153,9 +141,9 @@ export async function saveTransactions(transactions: ITransaction[], userId: str
       }
     }
 
-    // If category is empty, null or undefined, use the default one
+    // Si no hay categoría asignada, la guardamos como null (sin categoría)
     if (!cleanedTx.category || cleanedTx.category === "") {
-      cleanedTx.category = defaultCategoryId;
+      cleanedTx.category = null;
     }
 
     // Strip frontend-only fields that are not in the Mongoose schema

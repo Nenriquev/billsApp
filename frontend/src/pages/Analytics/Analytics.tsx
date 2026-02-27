@@ -1,13 +1,15 @@
 import { useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { fetchCategories, fetchAnalytics } from "../../redux/thunks/dataThunks";
-import { setDates } from "../../redux/slices/dataSlice";
+import { setDates, resetAnalytics } from "../../redux/slices/dataSlice";
 import Dropdown from "../../components/Dropdown";
 import BarChart from "../../components/BarChart";
 import CountUp from "react-countup";
 import { extractYear, getYearRange } from "../../utils/format";
 import { DropdownOption } from "../../types";
+import { IconChartBarOff, IconPlus } from "@tabler/icons-react";
 
 const currentYear = new Date().getFullYear();
 
@@ -110,8 +112,73 @@ const Card = styled.div<{ isLast?: boolean }>`
   }
 `;
 
+const EmptyStateContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  gap: 20px;
+  margin-top: 20px;
+
+  .empty-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--accent-light);
+    color: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    svg { width: 32px; height: 32px; }
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    max-width: 360px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+`;
+
+const PrimaryBtn = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  svg { width: 20px; height: 20px; }
+  &:hover { 
+    background: #4f46e5;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+  }
+  &:active { transform: translateY(0); }
+`;
+
 const Analytics = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { analytics, loadingAnalytics, categories, dates } = useAppSelector((s) => s.data);
 
   useEffect(() => {
@@ -124,6 +191,12 @@ const Analytics = () => {
       dispatch(fetchAnalytics({ category: cat.category, ...dates }));
     }
   }, [dispatch, categories, dates]);
+
+  useEffect(() => {
+    return () => {
+      dispatch(resetAnalytics());
+    };
+  }, [dispatch]);
 
   const handleYearChange = (opt: DropdownOption) => {
     dispatch(setDates(getYearRange(opt.value as number)));
@@ -153,23 +226,40 @@ const Analytics = () => {
       </Header>
 
       <Grid>
-        {items.map(({ key, data, loading }, index) => (
-          <Card key={key} isLast={index === items.length - 1}>
-            <div className="head">
-              <h3>{key}</h3>
-              {data?.total != null && data.total > 0 && (
-                <CountUp
-                  end={data.total}
-                  duration={1}
-                  decimals={2}
-                  suffix=" €"
-                  className="total"
-                />
-              )}
-            </div>
-            <BarChart data={data?.data || {}} loading={loading} id={key} />
-          </Card>
-        ))}
+        {categories.length === 0 ? (
+          <div style={{ gridColumn: "1 / -1" }}>
+            <EmptyStateContainer>
+              <div className="empty-icon">
+                <IconChartBarOff />
+              </div>
+              <div>
+                <h3>No hay datos para analizar</h3>
+                <p>Para ver gráficas comparativas, primero necesitas tener categorías configuradas y transacciones registradas.</p>
+              </div>
+              <PrimaryBtn onClick={() => navigate("/upload")}>
+                <IconPlus /> Empezar a importar datos
+              </PrimaryBtn>
+            </EmptyStateContainer>
+          </div>
+        ) : (
+          items.map(({ key, data, loading }, index) => (
+            <Card key={key} isLast={index === items.length - 1}>
+              <div className="head">
+                <h3>{key}</h3>
+                {data?.total != null && data.total > 0 && (
+                  <CountUp
+                    end={data.total}
+                    duration={1}
+                    decimals={2}
+                    suffix=" €"
+                    className="total"
+                  />
+                )}
+              </div>
+              <BarChart data={data?.data || {}} loading={loading} id={key} />
+            </Card>
+          ))
+        )}
       </Grid>
     </Page>
   );

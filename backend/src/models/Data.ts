@@ -9,7 +9,7 @@ const DataSchema = new Schema({
   category: {
     type: Schema.Types.ObjectId,
     ref: "Categories",
-    required: true,
+    required: false,
   },
   bank: String,
   subcategory: {

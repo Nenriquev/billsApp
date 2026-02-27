@@ -6,6 +6,7 @@ import {
   fetchAnalytics,
   fetchDashboard,
   updateTransaction,
+  createTransaction,
   deleteTransaction,
   createCategory,
   updateCategory,
@@ -85,6 +86,16 @@ const dataSlice = createSlice({
     clearError(state) {
       state.error = null;
     },
+    resetData(state) {
+      state.transactions = [];
+      state.dashboard = null;
+      state.analytics = {};
+      state.loadingAnalytics = {};
+    },
+    resetAnalytics(state) {
+      state.analytics = {};
+      state.loadingAnalytics = {};
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -137,6 +148,10 @@ const dataSlice = createSlice({
         state.error = action.payload || "Error al cargar dashboard";
       })
 
+      .addCase(createTransaction.fulfilled, (state, action) => {
+        state.transactions.unshift(action.payload);
+      })
+      
       .addCase(updateTransaction.fulfilled, (state, action) => {
         const updated = action.payload;
         const index = state.transactions.findIndex((t) => t._id === updated._id);
@@ -197,6 +212,6 @@ const dataSlice = createSlice({
   },
 });
 
-export const { setDates, setSelectedTransaction, setSelectedYear, setSelectedMonth, clearError } =
+export const { setDates, setSelectedTransaction, setSelectedYear, setSelectedMonth, clearError, resetData, resetAnalytics } =
   dataSlice.actions;
 export const dataReducer = dataSlice.reducer;

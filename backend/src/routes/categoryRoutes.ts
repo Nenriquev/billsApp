@@ -7,7 +7,11 @@ import {
   deleteCategory,
 } from "../controllers/categoryController";
 
+import { verifyToken } from "../middleware/auth";
+
 const categoryRouter = Router();
+
+categoryRouter.use(verifyToken);
 
 categoryRouter.get("/", getCategories);
 categoryRouter.get("/:id", getCategory);

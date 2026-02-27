@@ -11,34 +11,12 @@ import {
   IconCheck,
   IconTag,
   IconCategory,
+  IconFolderPlus,
 } from "@tabler/icons-react";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { fetchCategories, createCategory, updateCategory, deleteCategory } from "../../redux/thunks/dataThunks";
-import { Category } from "../../types";
-
-/* ────── Types ────── */
-
-interface TypeEntry {
-  name: string;
-  entry: string;
-}
-
-interface SubcategoryEntry {
-  name: string;
-  types: string[];
-}
-
-interface CategoryForm {
-  category: string;
-  types: TypeEntry[];
-  subcategories: SubcategoryEntry[];
-}
-
-const emptyForm: CategoryForm = {
-  category: "",
-  types: [{ name: "", entry: "" }],
-  subcategories: [],
-};
+import { Category, CategoryTypeEntry, SubcategoryEntry } from "../../types";
+import Loader from "../../components/Loader";
 
 /* ────── Styles ────── */
 
@@ -233,6 +211,50 @@ const EmptyMsg = styled.span`
   font-size: 0.82rem;
   color: var(--text-muted);
   font-style: italic;
+`;
+
+const EmptyStateContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  gap: 20px;
+
+  .empty-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--accent-light);
+    color: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    svg { width: 32px; height: 32px; }
+  }
+
+  h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    max-width: 320px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  button {
+    align-self: center;
+  }
 `;
 
 /* ── Form Styles ── */
@@ -445,6 +467,20 @@ const ConfirmBox = styled(motion.div)`
   }
 `;
 
+/* ────── Types ────── */
+
+interface CategoryForm {
+  category: string;
+  types: CategoryTypeEntry[];
+  subcategories: SubcategoryEntry[];
+}
+
+const emptyForm: CategoryForm = {
+  category: "",
+  types: [{ name: "", entry: "" }],
+  subcategories: [],
+};
+
 /* ────── Component ────── */
 
 const Categories = () => {
@@ -590,7 +626,9 @@ const Categories = () => {
     return (
       <Page>
         <Header><h1>Categorías</h1></Header>
-        <EmptyMsg>Cargando categorías...</EmptyMsg>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+          <Loader />
+        </div>
       </Page>
     );
   }
@@ -605,96 +643,111 @@ const Categories = () => {
       </Header>
 
       <List>
-        {categories.map((cat) => (
-          <Card
-            key={cat._id}
-            layout
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <CardHeader onClick={() => toggle(cat._id)}>
-              {expanded[cat._id] ? (
-                <IconChevronDown className="icon-toggle" />
-              ) : (
-                <IconChevronRight className="icon-toggle" />
-              )}
-              <span className="cat-name">{cat.category}</span>
-              <span className="badge">
-                {cat.types.length} patrón{cat.types.length !== 1 ? "es" : ""}
-              </span>
-              <div className="actions">
-                <IconBtn
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openEditForm(cat);
-                  }}
-                  title="Editar"
-                >
-                  <IconEdit />
-                </IconBtn>
-                <IconBtn
-                  $danger
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setConfirmDelete(cat);
-                  }}
-                  title="Eliminar"
-                >
-                  <IconTrash />
-                </IconBtn>
-              </div>
-            </CardHeader>
+        {categories.length === 0 ? (
+          <EmptyStateContainer>
+            <div className="empty-icon">
+              <IconFolderPlus />
+            </div>
+            <div>
+              <h3>No hay categorías</h3>
+              <p>Crea categorías para organizar tus transacciones automáticamente mediante patrones.</p>
+            </div>
+            <AddBtn onClick={openCreateForm}>
+              <IconPlus /> Crear mi primera categoría
+            </AddBtn>
+          </EmptyStateContainer>
+        ) : (
+          categories.map((cat) => (
+            <Card
+              key={cat._id}
+              layout
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <CardHeader onClick={() => toggle(cat._id)}>
+                {expanded[cat._id] ? (
+                  <IconChevronDown className="icon-toggle" />
+                ) : (
+                  <IconChevronRight className="icon-toggle" />
+                )}
+                <span className="cat-name">{cat.category}</span>
+                <span className="badge">
+                  {cat.types.length} patrón{cat.types.length !== 1 ? "es" : ""}
+                </span>
+                <div className="actions">
+                  <IconBtn
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditForm(cat);
+                    }}
+                    title="Editar"
+                  >
+                    <IconEdit />
+                  </IconBtn>
+                  <IconBtn
+                    $danger
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDelete(cat);
+                    }}
+                    title="Eliminar"
+                  >
+                    <IconTrash />
+                  </IconBtn>
+                </div>
+              </CardHeader>
 
-            <AnimatePresence>
-              {expanded[cat._id] && (
-                <CardBody
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Section>
-                    <div className="section-title">
-                      <IconTag /> Patrones de coincidencia
-                    </div>
-                    {cat.types.length === 0 ? (
-                      <EmptyMsg>Sin patrones configurados</EmptyMsg>
-                    ) : (
-                      <div>
-                        {cat.types.map((t, i) => (
-                          <TypeChip key={i}>
-                            <span className="chip-label">{t.name}</span>
-                            <span className="chip-entry">({t.entry})</span>
-                          </TypeChip>
-                        ))}
+              <AnimatePresence>
+                {expanded[cat._id] && (
+                  <CardBody
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Section>
+                      <div className="section-title">
+                        <IconTag /> Patrones de coincidencia
                       </div>
-                    )}
-                  </Section>
+                      {cat.types.length === 0 ? (
+                        <EmptyMsg>Sin patrones configurados</EmptyMsg>
+                      ) : (
+                        <div>
+                          {cat.types.map((t, i) => (
+                            <TypeChip key={i}>
+                              <span className="chip-label">{t.name}</span>
+                              <span className="chip-entry">({t.entry})</span>
+                            </TypeChip>
+                          ))}
+                        </div>
+                      )}
+                    </Section>
 
-                  <Section>
-                    <div className="section-title">
-                      <IconCategory /> Subcategorías
-                    </div>
-                    {cat.subcategories.length === 0 ? (
-                      <EmptyMsg>Sin subcategorías</EmptyMsg>
-                    ) : (
-                      cat.subcategories.map((sub, i) => (
-                        <SubcatRow key={i}>
-                          <span className="sub-name">{sub.name}</span>
-                          <div className="sub-types">
-                            {sub.types.map((t, j) => (
-                              <span className="sub-type-chip" key={j}>{t}</span>
-                            ))}
-                          </div>
-                        </SubcatRow>
-                      ))
-                    )}
-                  </Section>
-                </CardBody>
-              )}
-            </AnimatePresence>
-          </Card>
-        ))}
+                    <Section>
+                      <div className="section-title">
+                        <IconCategory /> Subcategorías
+                      </div>
+                      {cat.subcategories.length === 0 ? (
+                        <EmptyMsg>Sin subcategorías</EmptyMsg>
+                      ) : (
+                        cat.subcategories.map((sub, i) => (
+                          <SubcatRow key={i}>
+                            <span className="sub-name">{sub.name}</span>
+                            <div className="sub-types">
+                              {sub.types.map((t, j) => (
+                                <span className="sub-type-chip" key={j}>{t}</span>
+                              ))}
+                            </div>
+                          </SubcatRow>
+                        ))
+                      )}
+                    </Section>
+                  </CardBody>
+                )}
+              </AnimatePresence>
+            </Card>
+          ))
+        )}
       </List>
 
       {/* ── Create/Edit Form Modal ── */}

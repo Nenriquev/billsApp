@@ -48,8 +48,40 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Teléfono": "#ec4899",
   Entretenimiento: "#10b981",
   Supermercados: "#3b82f6",
+  Restaurantes: "#f97316",
+  Transporte: "#14b8a6",
+  Salud: "#84cc16",
+  Educación: "#a855f7",
+  Viajes: "#0ea5e9",
+  Ropa: "#e879f9",
+  Coche: "#fb923c",
+  "Ocio": "#22d3ee",
+  "Comida": "#f97316",
+  "Sin categoría": "#94a3b8",
   "Otra categoría": "#6b7280",
 };
+
+// Paleta dinámica para categorías no reconocidas
+const COLOR_PALETTE = [
+  "#6366f1", "#3b82f6", "#10b981", "#f59e0b", "#ef4444",
+  "#8b5cf6", "#ec4899", "#06b6d4", "#f97316", "#14b8a6",
+  "#84cc16", "#a855f7", "#0ea5e9", "#e879f9", "#fb923c",
+  "#22d3ee", "#4ade80", "#fbbf24", "#f43f5e", "#38bdf8",
+];
+
+// Mapa persistente para que la misma categoría siempre tenga el mismo color
+const dynamicColorCache: Record<string, string> = {};
+let paletteIndex = 0;
+
+function getCategoryColor(catName: string): string {
+  if (CATEGORY_COLORS[catName]) return CATEGORY_COLORS[catName];
+  if (dynamicColorCache[catName]) return dynamicColorCache[catName];
+  const color = COLOR_PALETTE[paletteIndex % COLOR_PALETTE.length];
+  paletteIndex++;
+  dynamicColorCache[catName] = color;
+  return color;
+}
+
 
 const MONTH_NAMES = [
   "Ene", "Feb", "Mar", "Abr", "May", "Jun",
@@ -98,9 +130,7 @@ export async function getDashboard(year: number, month: number, userId: string):
     getTotalForPeriod(currentFrom, currentTo, userId),
     getTotalForPeriod(prevMonthFrom, prevMonthTo, userId),
     getTotalForPeriod(lastYearFrom, lastYearTo, userId),
-    Categories.find({
-      $or: [{ user: userId }, { user: { $exists: false } }, { user: null }]
-    }),
+    Categories.find({ user: userId }),
     Data.aggregate([
       { $match: { 
         user: new Types.ObjectId(userId),
@@ -181,7 +211,7 @@ export async function getDashboard(year: number, month: number, userId: string):
         category: catName,
         total: Number(item.total.toFixed(2)),
         count: item.count,
-        color: CATEGORY_COLORS[catName] || "#6b7280",
+        color: getCategoryColor(catName),
       };
     });
 
@@ -231,7 +261,7 @@ export async function getDashboard(year: number, month: number, userId: string):
       .map(([name, data]) => ({
         name,
         data: data.slice(0, month + 1),
-        color: CATEGORY_COLORS[name] || "#6b7280",
+        color: getCategoryColor(name),
       }))
       .filter((s) => s.data.some(val => val > 0)) // Solo mostrar si hay algún valor > 0
       .sort((a, b) => {

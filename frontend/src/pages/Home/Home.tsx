@@ -1,8 +1,8 @@
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { fetchDashboard } from "../../redux/thunks/dataThunks";
-import { setSelectedYear, setSelectedMonth } from "../../redux/slices/dataSlice";
+import { setSelectedYear, setSelectedMonth, resetData } from "../../redux/slices/dataSlice";
 import Dropdown from "../../components/Dropdown";
 import Loader from "../../components/Loader";
 import { formatCurrency } from "../../utils/format";
@@ -17,7 +17,42 @@ import {
   IconCash,
   IconReceipt,
   IconChartPie,
+  IconHome,
+  IconDroplet,
+  IconBolt,
+  IconFlame,
+  IconShieldCheck,
+  IconPhone,
+  IconMusic,
+  IconShoppingCart,
+  IconTag,
+  IconCar,
+  IconPlane,
+  IconHeart,
+  IconSchool,
+  IconToolsKitchen2,
+  IconCoffee,
+  IconDots,
 } from "@tabler/icons-react";
+
+const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  "Alquiler": IconHome,
+  "Agua": IconDroplet,
+  "Luz": IconBolt,
+  "Gas": IconFlame,
+  "Seguro": IconShieldCheck,
+  "Teléfono": IconPhone,
+  "Entretenimiento": IconMusic,
+  "Supermercados": IconShoppingCart,
+  "Coche": IconCar,
+  "Viajes": IconPlane,
+  "Salud": IconHeart,
+  "Educación": IconSchool,
+  "Restaurantes": IconToolsKitchen2,
+  "Café": IconCoffee,
+  "Sin categoría": IconDots,
+  "Otra categoría": IconDots,
+};
 
 const currentYear = new Date().getFullYear();
 
@@ -216,6 +251,82 @@ const TopExpensesList = styled.div`
   }
 `;
 
+const CategoryGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+
+  .cat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: box-shadow 0.2s, transform 0.15s;
+    cursor: default;
+
+    &:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .cat-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .cat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        svg { width: 20px; height: 20px; }
+      }
+
+      .cat-name {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .cat-amount {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .cat-bar-wrap {
+      width: 100%;
+      height: 6px;
+      background: var(--border-light);
+      border-radius: 99px;
+      overflow: hidden;
+
+      .cat-bar {
+        height: 100%;
+        border-radius: 99px;
+        transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+    }
+
+    .cat-percent {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: right;
+    }
+  }
+`;
+
 const LoaderWrapper = styled.div`
   display: flex;
   justify-content: center;
@@ -244,6 +355,12 @@ const Home = () => {
   useEffect(() => {
     dispatch(fetchDashboard({ year: selectedYear, month: selectedMonth }));
   }, [dispatch, selectedYear, selectedMonth]);
+
+  useEffect(() => {
+    return () => {
+      dispatch(resetData());
+    };
+  }, [dispatch]);
 
   const handleYearChange = (opt: DropdownOption) => {
     dispatch(setSelectedYear(opt.value as number));
@@ -360,6 +477,41 @@ const Home = () => {
           </TopExpensesList>
         </ChartCard>
       </ChartsRow>
+
+      {d?.categoryBreakdown && d.categoryBreakdown.length > 0 && (
+        <ChartCard className="full-width">
+          <h3>% de gastos por categoría</h3>
+          <CategoryGrid>
+            {d.categoryBreakdown.map(cat => {
+              const percent = d.totalSpent > 0 ? ((cat.total / d.totalSpent) * 100) : 0;
+              const percentStr = percent.toFixed(1);
+              const CatIcon = CATEGORY_ICONS[cat.category] ?? IconTag;
+              return (
+                <div key={cat.categoryId} className="cat-card">
+                  <div className="cat-header">
+                    <div
+                      className="cat-icon"
+                      style={{ background: cat.color + "22", color: cat.color }}
+                    >
+                      <CatIcon />
+                    </div>
+                    <span className="cat-name">{cat.category}</span>
+                  </div>
+                  <div className="cat-amount">{formatCurrency(cat.total)}</div>
+                  <div className="cat-bar-wrap">
+                    <div
+                      className="cat-bar"
+                      style={{ width: `${percent}%`, background: cat.color }}
+                    />
+                  </div>
+                  <div className="cat-percent">{percentStr}% del total</div>
+                </div>
+              );
+            })}
+          </CategoryGrid>
+        </ChartCard>
+      )}
+
 
       <ChartCard className="full-width">
         <h3>Tendencia mensual de gastos</h3>

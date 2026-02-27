@@ -151,7 +151,8 @@ export const previewSheet = async (req: Request, res: Response, next: NextFuncti
 
     // Phase 2: AI classification for unmatched transactions
     if (unmatchedTransactions.length > 0) {
-      const analysis = await suggestCategories(unmatchedTransactions, categories);
+      const userId = (req as any).user.id;
+      const analysis = await suggestCategories(unmatchedTransactions, categories, userId);
 
       const isValidSubcategory = (concept: string, sub: string | null | undefined) => {
         if (!sub) return false;

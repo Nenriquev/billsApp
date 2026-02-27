@@ -12,8 +12,8 @@ const PROVIDER_FACTORIES: Record<string, (config: ProviderConfig) => AIProvider>
   anthropic: (config) => new AnthropicProvider(config),
 };
 
-export async function getDefaultProvider(): Promise<AIProvider | null> {
-  const providerDoc = await AIProviderModel.findOne({ isDefault: true, enabled: true });
+export async function getDefaultProvider(userId: string): Promise<AIProvider | null> {
+  const providerDoc = await AIProviderModel.findOne({ user: userId, isDefault: true, enabled: true });
   if (!providerDoc) {
     return null;
   }
@@ -36,12 +36,12 @@ export async function getDefaultProvider(): Promise<AIProvider | null> {
   return factory(config);
 }
 
-export async function getAllProviders() {
-  return AIProviderModel.find({}).sort({ createdAt: -1 });
+export async function getAllProviders(userId: string) {
+  return AIProviderModel.find({ user: userId }).sort({ createdAt: -1 });
 }
 
-export async function getProviderById(id: string) {
-  return AIProviderModel.findById(id);
+export async function getProviderById(id: string, userId: string) {
+  return AIProviderModel.findOne({ _id: id, user: userId });
 }
 
 export async function createProvider(data: {
@@ -51,18 +51,20 @@ export async function createProvider(data: {
   model?: string;
   enabled?: boolean;
   isDefault?: boolean;
+  userId: string;
 }) {
-  // Si se marca como default, quitar el default de los demás
+  // Si se marca como default, quitar el default de los demás del mismo usuario
   if (data.isDefault) {
-    await AIProviderModel.updateMany({}, { $set: { isDefault: false } });
+    await AIProviderModel.updateMany({ user: data.userId }, { $set: { isDefault: false } });
   }
 
-  const provider = new AIProviderModel(data);
+  const provider = new AIProviderModel({ ...data, user: data.userId });
   return provider.save();
 }
 
 export async function updateProvider(
   id: string,
+  userId: string,
   data: Partial<{
     name: string;
     apiKey: string;
@@ -71,20 +73,20 @@ export async function updateProvider(
     isDefault: boolean;
   }>
 ) {
-  // Si se marca como default, quitar el default de los demás
+  // Si se marca como default, quitar el default de los demás del mismo usuario
   if (data.isDefault) {
-    await AIProviderModel.updateMany({ _id: { $ne: id } }, { $set: { isDefault: false } });
+    await AIProviderModel.updateMany({ _id: { $ne: id }, user: userId }, { $set: { isDefault: false } });
   }
 
-  return AIProviderModel.findByIdAndUpdate(id, { $set: data }, { new: true });
+  return AIProviderModel.findOneAndUpdate({ _id: id, user: userId }, { $set: data }, { new: true });
 }
 
-export async function deleteProvider(id: string) {
-  return AIProviderModel.findByIdAndDelete(id);
+export async function deleteProvider(id: string, userId: string) {
+  return AIProviderModel.findOneAndDelete({ _id: id, user: userId });
 }
 
-export async function testProvider(id: string) {
-  const providerDoc = await AIProviderModel.findById(id);
+export async function testProvider(id: string, userId: string) {
+  const providerDoc = await AIProviderModel.findOne({ _id: id, user: userId });
   if (!providerDoc) {
     return { valid: false, error: "Proveedor no encontrado." };
   }

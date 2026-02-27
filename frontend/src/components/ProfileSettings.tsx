@@ -1,16 +1,20 @@
 import { useState } from "react";
 import styled from "styled-components";
-import { IconUser, IconLock, IconCheck, IconAlertCircle } from "@tabler/icons-react";
+import { IconUser, IconLock, IconCheck, IconAlertCircle, IconMail, IconEdit } from "@tabler/icons-react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../axios/axios";
 
 /* ────── Styles ────── */
 
 const Container = styled.div`
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
-  max-width: 560px;
+  align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const SectionCard = styled.div`
@@ -18,29 +22,86 @@ const SectionCard = styled.div`
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  height: 100%;
 `;
 
 const SectionHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 16px 20px;
+  gap: 12px;
+  padding: 18px 24px;
   border-bottom: 1px solid var(--border);
   font-weight: 600;
   font-size: 0.95rem;
 
-  svg {
-    width: 18px;
-    height: 18px;
+  .header-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    background: var(--accent-light);
     color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    svg { width: 18px; height: 18px; }
   }
 `;
 
 const SectionBody = styled.div`
-  padding: 20px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
+  gap: 18px;
+`;
+
+const AvatarBlock = styled.div`
+  display: flex;
+  align-items: center;
   gap: 16px;
+  padding: 16px;
+  background: var(--border-light);
+  border-radius: var(--radius-sm);
+
+  .avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .avatar-info {
+    flex: 1;
+    min-width: 0;
+
+    .avatar-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .avatar-email {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 2px;
+
+      svg { width: 13px; height: 13px; flex-shrink: 0; }
+    }
+  }
 `;
 
 const FieldGroup = styled.div`
@@ -96,7 +157,7 @@ const Btn = styled.button<{ $variant?: "primary" | "danger" }>`
   font-size: 0.88rem;
   font-weight: 500;
   transition: 0.2s;
-  align-self: flex-start;
+  width: 100%;
 
   svg {
     width: 16px;
@@ -141,24 +202,6 @@ const Feedback = styled.div<{ $type: "success" | "error" }>`
     p.$type === "success"
       ? `background: var(--success-light); color: #15803d;`
       : `background: var(--danger-light); color: var(--danger);`}
-`;
-
-const InfoRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-
-  .info-label {
-    font-size: 0.82rem;
-    color: var(--text-secondary);
-  }
-
-  .info-value {
-    font-size: 0.88rem;
-    font-weight: 500;
-    color: var(--text-primary);
-  }
 `;
 
 /* ────── Component ────── */
@@ -235,18 +278,32 @@ const ProfileSettings = () => {
     }
   };
 
+  const initials = (user?.name || user?.email || "U")
+    .split(" ")
+    .map((w: string) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
   return (
     <Container>
       {/* ── Profile Info ── */}
       <SectionCard>
         <SectionHeader>
-          <IconUser /> Información personal
+          <div className="header-icon"><IconUser /></div>
+          Información personal
         </SectionHeader>
         <SectionBody>
-          <InfoRow>
-            <span className="info-label">Email</span>
-            <span className="info-value">{user?.email}</span>
-          </InfoRow>
+          <AvatarBlock>
+            <div className="avatar">{initials}</div>
+            <div className="avatar-info">
+              <div className="avatar-name">{user?.name || "Sin nombre"}</div>
+              <div className="avatar-email">
+                <IconMail />
+                {user?.email}
+              </div>
+            </div>
+          </AvatarBlock>
 
           <FieldGroup>
             <label>Nombre</label>
@@ -271,8 +328,8 @@ const ProfileSettings = () => {
             onClick={handleSaveName}
             disabled={savingName || !name.trim() || name.trim() === user?.name}
           >
-            <IconCheck />
-            {savingName ? "Guardando..." : "Guardar nombre"}
+            <IconEdit />
+            {savingName ? "Guardando..." : "Guardar cambios"}
           </Btn>
         </SectionBody>
       </SectionCard>
@@ -280,7 +337,8 @@ const ProfileSettings = () => {
       {/* ── Change Password ── */}
       <SectionCard>
         <SectionHeader>
-          <IconLock /> Cambiar contraseña
+          <div className="header-icon"><IconLock /></div>
+          Cambiar contraseña
         </SectionHeader>
         <SectionBody>
           <FieldGroup>

@@ -6,7 +6,7 @@ import Input from "./Input";
 import Dropdown from "./Dropdown";
 import { useAppDispatch, useAppSelector } from "../redux/hooks";
 import { setModal } from "../redux/slices/appSlice";
-import { updateTransaction, deleteTransaction } from "../redux/thunks/dataThunks";
+import { updateTransaction, createTransaction, deleteTransaction } from "../redux/thunks/dataThunks";
 import { Transaction, DropdownOption } from "../types";
 
 const Overlay = styled.div`
@@ -178,9 +178,16 @@ const Modal = ({ open, element }: ModalProps) => {
         concept: element.concept,
         subcategory: element.subcategory ?? "",
       });
+    } else {
+      setValues({
+        category: "",
+        value: "",
+        concept: "",
+        subcategory: "",
+      });
     }
     setConfirmDelete(false);
-  }, [element]);
+  }, [element, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -202,18 +209,26 @@ const Modal = ({ open, element }: ModalProps) => {
   };
 
   const handleSubmit = () => {
-    if (!element?._id) return;
-    dispatch(
-      updateTransaction({
-        id: element._id,
-        data: {
-          category: { _id: values.category } as Transaction["category"],
-          value: Number(values.value),
-          concept: values.concept,
-          subcategory: values.subcategory || undefined,
-        },
-      })
-    );
+    const payload: any = {
+      value: Number(values.value),
+      concept: values.concept,
+      subcategory: values.subcategory || undefined,
+      date: element?.date || new Date().toISOString(),
+      bank: element?.bank || "Manual",
+    };
+
+    if (values.category && values.category.trim() !== "") {
+      payload.category = values.category;
+    } else {
+      payload.category = null;
+    }
+
+    if (element?._id) {
+      dispatch(updateTransaction({ id: element._id, data: payload }));
+    } else {
+      dispatch(createTransaction(payload));
+    }
+    close();
   };
 
   const handleDelete = () => {
@@ -242,7 +257,7 @@ const Modal = ({ open, element }: ModalProps) => {
               exit={{ scale: 0.95, opacity: 0 }}
             >
               <div className="panel-header">
-                <h3>Editar transacción</h3>
+                <h3>{element ? "Editar transacción" : "Nueva transacción"}</h3>
                 <IconX onClick={close} className="close-btn" size={20} />
               </div>
 
@@ -275,12 +290,16 @@ const Modal = ({ open, element }: ModalProps) => {
               <Input name="concept" value={values.concept} type="text" onChange={handleChange} placeholder="Concepto" />
 
               <div className="actions">
-                <button className="btn-delete" onClick={() => setConfirmDelete(true)}>
-                  <IconTrash /> Eliminar
-                </button>
+                {element ? (
+                  <button className="btn-delete" onClick={() => setConfirmDelete(true)}>
+                    <IconTrash /> Eliminar
+                  </button>
+                ) : <div />}
                 <div className="actions-right">
                   <button className="btn-cancel" onClick={close}>Cancelar</button>
-                  <button className="btn-save" onClick={handleSubmit}>Guardar</button>
+                  <button className="btn-save" onClick={handleSubmit}>
+                    {element ? "Guardar" : "Crear"}
+                  </button>
                 </div>
               </div>
             </motion.div>

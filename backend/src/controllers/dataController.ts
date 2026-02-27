@@ -12,6 +12,16 @@ export const getData = async (req: Request, res: Response, next: NextFunction) =
   }
 };
 
+export const createTransaction = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).user.id;
+    const transaction = await dataService.createTransaction(userId, req.body);
+    return res.status(201).json(transaction);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getCategories = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req as any).user.id;

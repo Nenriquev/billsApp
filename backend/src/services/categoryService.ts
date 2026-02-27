@@ -14,10 +14,13 @@ export interface UpdateCategoryPayload {
   subcategories?: ISubcategory[];
 }
 
-export async function getAllCategories() {
-  const categories = await Categories.find({}).sort({ category: 1 });
+export async function getAllCategories(userId: string) {
+  // Show strictly only the user's own categories
+  const categories = await Categories.find({
+    user: userId
+  }).sort({ category: 1 });
   
-  // Limpieza automática "on-the-fly" de categorías
+  // Limpieza automática “on-the-fly” de categorías del usuario
   return Promise.all(categories.map(async (cat) => {
     let needsSave = false;
     
@@ -108,12 +111,15 @@ export async function getAllCategories() {
   }));
 }
 
-export async function getCategoryById(id: string) {
+export async function getCategoryById(id: string, userId: string) {
   if (!Types.ObjectId.isValid(id)) {
     throw new AppError("ID de categoría inválido", 400);
   }
 
-  const category = await Categories.findById(id);
+  const category = await Categories.findOne({
+    _id: id,
+    user: userId
+  });
   if (!category) {
     throw new AppError("Categoría no encontrada", 404);
   }
@@ -121,13 +127,15 @@ export async function getCategoryById(id: string) {
   return category;
 }
 
-export async function createCategory(data: CreateCategoryPayload) {
+export async function createCategory(data: CreateCategoryPayload, userId: string) {
   if (!data.category?.trim()) {
     throw new AppError("El nombre de la categoría es obligatorio", 400);
   }
 
+  // Check uniqueness within this user's scope
   const existing = await Categories.findOne({
     category: { $regex: new RegExp(`^${data.category.trim()}$`, "i") },
+    user: userId
   });
 
   if (existing) {
@@ -171,10 +179,11 @@ export async function createCategory(data: CreateCategoryPayload) {
     category: data.category.trim(),
     types: cleanTypes,
     subcategories: subcategories,
+    user: userId,
   });
 }
 
-export async function updateCategory(id: string, data: UpdateCategoryPayload) {
+export async function updateCategory(id: string, userId: string, data: UpdateCategoryPayload) {
   if (!Types.ObjectId.isValid(id)) {
     throw new AppError("ID de categoría inválido", 400);
   }
@@ -187,6 +196,7 @@ export async function updateCategory(id: string, data: UpdateCategoryPayload) {
     const existing = await Categories.findOne({
       _id: { $ne: id },
       category: { $regex: new RegExp(`^${data.category.trim()}$`, "i") },
+      user: userId
     });
 
     if (existing) {
@@ -233,7 +243,11 @@ export async function updateCategory(id: string, data: UpdateCategoryPayload) {
     updateData.subcategories = finalSubs;
   }
 
-  const updated = await Categories.findByIdAndUpdate(id, updateData, { new: true });
+  const updated = await Categories.findOneAndUpdate(
+    { _id: id, user: userId },
+    updateData,
+    { new: true }
+  );
 
   if (!updated) {
     throw new AppError("Categoría no encontrada", 404);
@@ -242,15 +256,16 @@ export async function updateCategory(id: string, data: UpdateCategoryPayload) {
   return updated;
 }
 
-export async function deleteCategory(id: string) {
+export async function deleteCategory(id: string, userId: string) {
   if (!Types.ObjectId.isValid(id)) {
     throw new AppError("ID de categoría inválido", 400);
   }
 
-  const deleted = await Categories.findByIdAndDelete(id);
+  // Only allow deleting own categories, not global ones
+  const deleted = await Categories.findOneAndDelete({ _id: id, user: userId });
 
   if (!deleted) {
-    throw new AppError("Categoría no encontrada", 404);
+    throw new AppError("Categoría no encontrada o no tienes permiso para eliminarla", 404);
   }
 
   return deleted;

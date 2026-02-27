@@ -20,8 +20,10 @@ import {
   IconTestPipe,
   IconToggleLeft,
   IconToggleRight,
+  IconRobot,
 } from "@tabler/icons-react";
 import { DropdownOption } from "../types";
+import Loader from "./Loader";
 
 const Container = styled.div`
   display: flex;
@@ -239,12 +241,51 @@ const ProviderCard = styled.div`
       &.btn-save {
         background: var(--accent);
         color: white;
-
         &:hover {
           background: #4f46e5;
         }
       }
     }
+  }
+`;
+
+const EmptyStateContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  gap: 20px;
+
+  .empty-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--accent-light);
+    color: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    svg { width: 32px; height: 32px; }
+  }
+
+  h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    max-width: 320px;
+    margin: 0 auto;
+    line-height: 1.5;
   }
 `;
 
@@ -550,11 +591,19 @@ const AIProvidersConfig = () => {
 
       <ProvidersList>
         {loading && providers.length === 0 ? (
-          <div>Cargando...</div>
-        ) : providers.length === 0 ? (
-          <div style={{ padding: "20px", textAlign: "center", color: "var(--text-secondary)" }}>
-            No hay proveedores configurados. Agrega uno para comenzar.
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+            <Loader />
           </div>
+        ) : providers.length === 0 ? (
+          <EmptyStateContainer>
+            <div className="empty-icon">
+              <IconRobot />
+            </div>
+            <div>
+              <h3>Sin inteligencia artificial</h3>
+              <p>Configura un proveedor (OpenAI, Gemini, Mistral...) para categorizar tus gastos automáticamente con IA.</p>
+            </div>
+          </EmptyStateContainer>
         ) : (
           providers.map((provider) => (
             <ProviderCard key={provider._id}>

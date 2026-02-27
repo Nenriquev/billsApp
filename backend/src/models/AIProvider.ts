@@ -28,6 +28,11 @@ const AIProviderSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: false, // required: false so existing docs without user still work
+  },
   createdAt: {
     type: Date,
     default: Date.now,
