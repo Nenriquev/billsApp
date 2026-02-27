@@ -341,6 +341,8 @@ const ModalContent = styled.div`
 const providerOptions: DropdownOption[] = [
   { name: "Mistral", value: "mistral" },
   { name: "OpenAI", value: "openai" },
+  { name: "Google Gemini", value: "gemini" },
+  { name: "Anthropic (Claude)", value: "anthropic" },
 ];
 
 const modelOptions: Record<string, DropdownOption[]> = {
@@ -354,6 +356,17 @@ const modelOptions: Record<string, DropdownOption[]> = {
     { name: "gpt-4o", value: "gpt-4o" },
     { name: "gpt-3.5-turbo", value: "gpt-3.5-turbo" },
   ],
+  gemini: [
+    { name: "gemini-2.5-flash", value: "gemini-2.5-flash" },
+    { name: "gemini-2.5-flash-lite", value: "gemini-2.5-flash-lite" },
+    { name: "gemini-2.5-pro", value: "gemini-2.5-pro" },
+    { name: "gemini-2.0-flash", value: "gemini-2.0-flash" },
+  ],
+  anthropic: [
+    { name: "Claude Sonnet 4", value: "claude-sonnet-4-20250514" },
+    { name: "Claude Haiku 3.5", value: "claude-3-5-haiku-20241022" },
+    { name: "Claude Opus 4", value: "claude-opus-4-20250514" },
+  ],
 };
 
 const AIProvidersConfig = () => {
@@ -366,7 +379,7 @@ const AIProvidersConfig = () => {
   const [testingProvider, setTestingProvider] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    provider: "mistral" as "mistral" | "openai",
+    provider: "mistral" as "mistral" | "openai" | "gemini" | "anthropic",
     name: "",
     apiKey: "",
     model: "",
@@ -409,17 +422,19 @@ const AIProvidersConfig = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.name || !formData.apiKey) {
+    if (!formData.name || (!editingProvider && !formData.apiKey)) {
       dispatch(setToast({ open: true, msg: "Nombre y API Key son requeridos", type: "danger" }));
       return;
     }
 
     try {
       if (editingProvider) {
+        const updateData: Record<string, any> = { ...formData };
+        if (!updateData.apiKey) delete updateData.apiKey;
         await dispatch(
           updateAIProvider({
             id: editingProvider._id,
-            data: formData,
+            data: updateData,
           })
         ).unwrap();
         dispatch(setToast({ open: true, msg: "Proveedor actualizado", type: "success" }));
@@ -465,7 +480,7 @@ const AIProvidersConfig = () => {
       dispatch(
         setToast({
           open: true,
-          msg: result.valid ? "Conexión exitosa" : "Error de conexión",
+          msg: result.valid ? "Conexión exitosa" : (result.error || "Error de conexión"),
           type: result.valid ? "success" : "danger",
         })
       );
@@ -611,7 +626,7 @@ const AIProvidersConfig = () => {
                 handleSelect={(option) => {
                   setFormData({
                     ...formData,
-                    provider: option.value as "mistral" | "openai",
+                    provider: option.value as "mistral" | "openai" | "gemini" | "anthropic",
                     model: "",
                   });
                 }}
@@ -634,7 +649,7 @@ const AIProvidersConfig = () => {
                 type="password"
                 value={formData.apiKey}
                 onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
-                placeholder={editingProvider ? "Dejar vacío para mantener la actual" : "sk-..."}
+                placeholder={editingProvider ? `Actual: ${editingProvider.apiKey || "••••••••"} — dejar vacío para mantener` : "sk-..."}
               />
             </div>
 

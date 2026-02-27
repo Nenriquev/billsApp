@@ -34,7 +34,7 @@ export const StepItem = styled.div<{ $active?: boolean; $completed?: boolean }>`
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: ${props => props.$completed ? 'var(--accent)' : props.$active ? 'var(--bg-card)' : 'var(--bg-body)'};
+    background: ${props => props.$completed ? 'var(--accent)' : props.$active ? 'var(--bg-card)' : 'var(--bg-primary)'};
     border: 2px solid ${props => (props.$active || props.$completed) ? 'var(--accent)' : 'var(--border)'};
     display: flex;
     align-items: center;
@@ -58,11 +58,12 @@ export const StepItem = styled.div<{ $active?: boolean; $completed?: boolean }>`
 export const StepLine = styled.div<{ $completed?: boolean }>`
   position: absolute;
   top: 18px;
-  left: 0;
+  left: 36px;
+  right: 36px;
   height: 2px;
-  background: var(--border-light);
-  width: 100%;
+  background: var(--border);
   z-index: 1;
+  border-radius: 2px;
 
   &::after {
     content: '';
@@ -70,6 +71,7 @@ export const StepLine = styled.div<{ $completed?: boolean }>`
     left: 0;
     top: 0;
     height: 100%;
+    border-radius: 2px;
     width: ${props => props.$completed ? '100%' : '0%'};
     background: var(--accent);
     transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
@@ -303,7 +305,7 @@ export const ReviewContainer = styled.div`
   .scroll-area {
     flex: 1;
     overflow-y: auto;
-    padding: 0 32px 32px;
+    padding: 24px 32px 32px;
     
     &::-webkit-scrollbar { width: 6px; }
     &::-webkit-scrollbar-track { background: transparent; }
@@ -344,7 +346,7 @@ export const ReviewContainer = styled.div`
 
     button {
       padding: 12px 28px;
-      border-radius: var(--radius);
+      border-radius: var(--radius-sm);
       font-weight: 600;
       font-size: 0.95rem;
       cursor: pointer;
@@ -509,7 +511,6 @@ export const TransactionTable = styled.table`
       &:hover {
         background: var(--danger-light);
         color: var(--danger);
-        transform: rotate(15deg);
       }
     }
   }

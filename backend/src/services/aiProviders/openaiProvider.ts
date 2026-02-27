@@ -25,55 +25,67 @@ export class OpenAIProvider implements AIProvider {
       return { suggestedCategories: [], assignedTransactions: [] };
     }
 
-    const transactionsSummary = transactions.slice(0, 50).map((tx) => ({
+    const transactionsSummary = transactions.slice(0, 50).map((tx, idx) => ({
+      idx,
       concept: tx.concept,
       value: tx.value,
     }));
 
     const simplifiedCategories = existingCategories.map((c) => ({
       category: c.category,
-      subcategories: c.subcategories.map((s) => s.name),
+      patterns: c.types.map((t) => t.entry),
+      subcategories: c.subcategories.map((s) => ({
+        name: s.name,
+        patterns: s.types,
+      })),
     }));
 
-    const prompt = `Actúa como un analista financiero experto. Tu tarea es organizar TODAS las transacciones bancarias proporcionadas.
+    const prompt = `You are an expert financial analyst specializing in Spanish banking. Classify ALL transactions and clean their concept names.
 
-CONTEXTO:
-Aquí están las CATEGORÍAS EXISTENTES del usuario:
+EXISTING CATEGORIES:
 ${JSON.stringify(simplifiedCategories, null, 2)}
 
-Aquí están las NUEVAS TRANSACCIONES a organizar (${transactionsSummary.length} en total):
+TRANSACTIONS (each has a unique "idx"):
 ${JSON.stringify(transactionsSummary, null, 2)}
 
-INSTRUCCIONES CRÍTICAS:
-1. Debes clasificar TODAS Y CADA UNA de las ${transactionsSummary.length} transacciones. No puedes dejar ninguna sin asignar.
-2. REGLA DE SUBCATEGORÍAS: La subcategoría debe ser un GRUPO GENÉRICO.
-   - LISTA PREFERIDA (u otros grupos genéricos similares):
-     * 'Restaurantes' (Para: Mcdonalds, Kfc, Burger King, Restaurantes locales, Brunch, Sushi, Pizzerías)
-     * 'Bares y Cafeterías' (Para: Starbucks, Cafés, Pubs, Bares de copas)
-     * 'Delivery' (Para: Uber Eats, Glovo, Just Eat)
-     * 'Suscripciones' (Para: Spotify, Netflix, HBO, Disney+, Gym)
-     * 'Supermercados' (Para: Mercadona, Carrefour, Lidl, Tiendas de barrio)
-     * 'Transporte' (Para: Uber, Cabify, Gasolineras, Parking, Metro, Tren)
-     * 'Servicios' (Para: Agua, Luz, Gas, Internet, Telefonía)
-   - REGLA DE ORO: NUNCA uses el nombre del establecimiento como subcategoría. Si un concepto es una comida/bebida fuera de casa, asígnalo siempre a 'Restaurantes' o 'Bares y Cafeterías'.
-3. Para cada transacción:
-   - Primero, busca una coincidencia lógica en "CATEGORÍAS EXISTENTES".
-   - Si existe una coincidencia clara, agrégala a la lista "assigned".
-   - Si NO existe ninguna categoría adecuada, debes sugerir una "NUEVA CATEGORÍA" y agregar la transacción a la lista "new_categories" bajo esa sugerencia.
-4. Puedes agrupar múltiples transacciones bajo una misma "Nueva Categoría".
-5. El output debe ser estrictamente JSON válido.
+INSTRUCTIONS:
 
-FORMATO DE RESPUESTA JSON:
+1. CONCEPT CLEANING — "cleanConcept" field:
+   Extract ONLY the recognizable brand/person name from raw bank text.
+   - "Pago Movil En Mcdonalds Glori, Barcelona Es, Tarj. :*484482" → "McDonald's"
+   - "Dia 9997" → "Dia"
+   - "Recibo Endesa Energia S.a., Concepto: Endesa Energia S.a. Factura De Electricidad..." → "Endesa"
+   - "Bizum A Favor De Maria Garcia Concepto: Sin Concepto" → "Bizum a Maria Garcia"
+   - "Adeudo Sepa De Netflix" → "Netflix"
+
+2. CLASSIFICATION — Use your knowledge of Spanish businesses:
+   - Endesa, Iberdrola, Naturgy → electricity/energy
+   - Mercadona, Lidl, Carrefour, Dia → supermarkets
+   - Vodafone, Movistar, Orange → telecom
+   - Netflix, Spotify, HBO → subscriptions
+   - Bizum, Transferencia → personal transfers
+
+   Priority:
+   a. If concept matches a pattern in existing categories → put in "assigned"
+   b. If concept SEMANTICALLY fits an existing category (by name/subcategories meaning) even without pattern → put in "assigned"
+   c. If NO existing category fits → create a NEW descriptive category in "new_categories"
+   d. NEVER use "Otros" or generic names. Be specific: "Suministros", "Transferencias", etc.
+
+3. SUBCATEGORIES: Must be generic groups (Restaurantes, Supermercados, Electricidad, Transporte), never business names.
+
+4. You MUST classify EVERY transaction. Return ALL ${transactionsSummary.length} idx values across assigned + new_categories.
+
+RESPONSE FORMAT (strict JSON) — use "idx" to identify transactions, NOT the concept string:
 {
   "assigned": [
-    { "concept": "Concepto exacto", "category": "Categoría existente", "subcategory": "Subcategoría o null" }
+    { "idx": 0, "cleanConcept": "Brand Name", "category": "Existing category name", "subcategory": "Group or null" }
   ],
   "new_categories": [
     {
-      "category": "Nombre Nueva Categoría",
-      "description": "Razón de la sugerencia",
+      "category": "Descriptive Name",
+      "description": "Reason",
       "items": [
-        { "concept": "Concepto exacto", "subcategory": "Subcategoría sugerida o null" }
+        { "idx": 1, "cleanConcept": "Brand Name", "subcategory": "Group or null" }
       ]
     }
   ]
@@ -84,7 +96,7 @@ FORMATO DE RESPUESTA JSON:
       const completion = await this.client.chat.completions.create({
         model,
         messages: [
-          { role: "system", content: "Eres un asistente financiero experto. Responde siempre con JSON válido." },
+          { role: "system", content: "You are an expert financial assistant specialized in classifying bank transactions. Always respond with valid JSON only." },
           { role: "user", content: prompt },
         ],
         temperature: 0.1,
@@ -117,20 +129,26 @@ FORMATO DE RESPUESTA JSON:
     }
   }
 
-  async testConnection(): Promise<boolean> {
-    if (!this.client) return false;
+  async testConnection() {
+    if (!this.client) return { valid: false, error: "Cliente no inicializado. Verifica la API Key." };
     try {
       await this.client.chat.completions.create({
         model: this.config.model || "gpt-4o-mini",
         messages: [{ role: "user", content: "test" }],
         max_tokens: 5,
       });
-      return true;
+      return { valid: true };
     } catch (error: any) {
       if (error?.status === 401) {
-        return false; // API key inválida
+        return { valid: false, error: "API Key inválida o expirada." };
       }
-      return true; // Otros errores pueden ser temporales
+      if (error?.status === 429) {
+        return { valid: false, error: "Límite de uso excedido. Verifica tu plan o créditos." };
+      }
+      if (error?.status === 404) {
+        return { valid: false, error: `Modelo "${this.config.model}" no encontrado. Verifica el nombre del modelo.` };
+      }
+      return { valid: false, error: error?.message || "Error desconocido al conectar con OpenAI." };
     }
   }
 }

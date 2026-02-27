@@ -228,7 +228,7 @@ export const fetchAIProviders = createAsyncThunk<
 
 export const createAIProvider = createAsyncThunk<
   AIProvider,
-  { provider: "mistral" | "openai"; name: string; apiKey: string; model?: string; enabled?: boolean; isDefault?: boolean },
+  { provider: "mistral" | "openai" | "gemini" | "anthropic"; name: string; apiKey: string; model?: string; enabled?: boolean; isDefault?: boolean },
   { rejectValue: string }
 >(
   "data/createAIProvider",
@@ -275,14 +275,14 @@ export const deleteAIProvider = createAsyncThunk<
 );
 
 export const testAIProvider = createAsyncThunk<
-  { valid: boolean },
+  { valid: boolean; error?: string },
   string,
   { rejectValue: string }
 >(
   "data/testAIProvider",
   async (id, { rejectWithValue }) => {
     try {
-      const response = await api.post<{ valid: boolean }>(`/ai-providers/${id}/test`);
+      const response = await api.post<{ valid: boolean; error?: string }>(`/ai-providers/${id}/test`);
       return response.data;
     } catch (error) {
       return rejectWithValue(getErrorMessage(error));

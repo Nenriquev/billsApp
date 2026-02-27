@@ -17,14 +17,19 @@ export interface AIAnalysisResult {
   assignedTransactions: TransactionAssignment[];
 }
 
+export interface TestConnectionResult {
+  valid: boolean;
+  error?: string;
+}
+
 export interface AIProvider {
   name: string;
   suggestCategories(transactions: ITransaction[], existingCategories: ICategory[]): Promise<AIAnalysisResult>;
-  testConnection(): Promise<boolean>;
+  testConnection(): Promise<TestConnectionResult>;
 }
 
 export interface ProviderConfig {
-  provider: "mistral" | "openai";
+  provider: "mistral" | "openai" | "gemini" | "anthropic";
   name: string;
   apiKey: string;
   model?: string;

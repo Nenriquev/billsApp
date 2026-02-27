@@ -50,8 +50,8 @@ export const createProvider = async (req: Request, res: Response, next: NextFunc
       throw new AppError("provider, name y apiKey son requeridos", 400);
     }
 
-    if (!["mistral", "openai"].includes(provider)) {
-      throw new AppError("Proveedor no soportado. Use 'mistral' u 'openai'", 400);
+    if (!["mistral", "openai", "gemini", "anthropic"].includes(provider)) {
+      throw new AppError("Proveedor no soportado. Use 'mistral', 'openai', 'gemini' o 'anthropic'", 400);
     }
 
     const newProvider = await aiProviderService.createProvider({
@@ -116,8 +116,8 @@ export const deleteProvider = async (req: Request, res: Response, next: NextFunc
 
 export const testProvider = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const isValid = await aiProviderService.testProvider(req.params.id);
-    return res.json({ valid: isValid });
+    const result = await aiProviderService.testProvider(req.params.id);
+    return res.json(result);
   } catch (error) {
     next(error);
   }

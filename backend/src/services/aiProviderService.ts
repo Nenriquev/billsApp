@@ -2,10 +2,14 @@ import AIProviderModel from "../models/AIProvider";
 import { AIProvider, ProviderConfig } from "../types/aiProvider";
 import { MistralProvider } from "./aiProviders/mistralProvider";
 import { OpenAIProvider } from "./aiProviders/openaiProvider";
+import { GeminiProvider } from "./aiProviders/geminiProvider";
+import { AnthropicProvider } from "./aiProviders/anthropicProvider";
 
 const PROVIDER_FACTORIES: Record<string, (config: ProviderConfig) => AIProvider> = {
   mistral: (config) => new MistralProvider(config),
   openai: (config) => new OpenAIProvider(config),
+  gemini: (config) => new GeminiProvider(config),
+  anthropic: (config) => new AnthropicProvider(config),
 };
 
 export async function getDefaultProvider(): Promise<AIProvider | null> {
@@ -21,7 +25,7 @@ export async function getDefaultProvider(): Promise<AIProvider | null> {
   }
 
   const config: ProviderConfig = {
-    provider: providerDoc.provider as "mistral" | "openai",
+    provider: providerDoc.provider as ProviderConfig["provider"],
     name: providerDoc.name,
     apiKey: providerDoc.apiKey,
     model: providerDoc.model || undefined,
@@ -41,7 +45,7 @@ export async function getProviderById(id: string) {
 }
 
 export async function createProvider(data: {
-  provider: "mistral" | "openai";
+  provider: ProviderConfig["provider"];
   name: string;
   apiKey: string;
   model?: string;
@@ -79,19 +83,19 @@ export async function deleteProvider(id: string) {
   return AIProviderModel.findByIdAndDelete(id);
 }
 
-export async function testProvider(id: string): Promise<boolean> {
+export async function testProvider(id: string) {
   const providerDoc = await AIProviderModel.findById(id);
   if (!providerDoc) {
-    return false;
+    return { valid: false, error: "Proveedor no encontrado." };
   }
 
   const factory = PROVIDER_FACTORIES[providerDoc.provider];
   if (!factory) {
-    return false;
+    return { valid: false, error: `Tipo de proveedor "${providerDoc.provider}" no soportado.` };
   }
 
   const config: ProviderConfig = {
-    provider: providerDoc.provider as "mistral" | "openai",
+    provider: providerDoc.provider as ProviderConfig["provider"],
     name: providerDoc.name,
     apiKey: providerDoc.apiKey,
     model: providerDoc.model || undefined,

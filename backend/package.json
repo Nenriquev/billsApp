@@ -12,6 +12,8 @@
   "author": "neru",
   "license": "ISC",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@google/generative-ai": "^0.24.1",
     "@mistralai/mistralai": "^1.14.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",

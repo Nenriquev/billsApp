@@ -1,18 +1,16 @@
-import { Mistral } from "@mistralai/mistralai";
+import Anthropic from "@anthropic-ai/sdk";
 import { AIProvider, AIAnalysisResult, ProviderConfig } from "../../types/aiProvider";
 import { ITransaction, ICategory } from "../../types";
 
-export class MistralProvider implements AIProvider {
-  name = "Mistral";
-  private client: Mistral | null = null;
+export class AnthropicProvider implements AIProvider {
+  name = "Anthropic";
+  private client: Anthropic | null = null;
   private config: ProviderConfig;
 
   constructor(config: ProviderConfig) {
     this.config = config;
     if (config.apiKey) {
-      this.client = new Mistral({
-        apiKey: config.apiKey,
-      });
+      this.client = new Anthropic({ apiKey: config.apiKey });
     }
   }
 
@@ -21,7 +19,7 @@ export class MistralProvider implements AIProvider {
     existingCategories: ICategory[]
   ): Promise<AIAnalysisResult> {
     if (!this.client) {
-      console.warn("Mistral: Cliente no inicializado");
+      console.warn("Anthropic: Cliente no inicializado");
       return { suggestedCategories: [], assignedTransactions: [] };
     }
 
@@ -59,11 +57,11 @@ INSTRUCTIONS:
    - "Adeudo Sepa De Netflix" → "Netflix"
 
 2. CLASSIFICATION — Use your knowledge of Spanish businesses:
-   - Endesa, Iberdrola, Naturgy → electricity/energy
-   - Mercadona, Lidl, Carrefour, Dia → supermarkets
-   - Vodafone, Movistar, Orange → telecom
-   - Netflix, Spotify, HBO → subscriptions
-   - Bizum, Transferencia → personal transfers
+   - Endesa, Iberdrola, Naturgy, etc. → electricity/energy
+   - Mercadona, Lidl, Carrefour, Dia, etc. → supermarkets
+   - Vodafone, Movistar, Orange, etc. → telecom
+   - Netflix, Spotify, HBO, etc. → subscriptions
+   - Bizum, Transferencia, etc. → personal transfers
 
    Priority:
    a. If concept matches a pattern in existing categories → put in "assigned"
@@ -92,33 +90,30 @@ RESPONSE FORMAT (strict JSON) — use "idx" to identify transactions, NOT the co
 }`;
 
     try {
-      const model = this.config.model || "mistral-small-latest";
-      const response = await this.client.chat.complete({
+      const model = this.config.model || "claude-sonnet-4-20250514";
+      const message = await this.client.messages.create({
         model,
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert financial assistant specialized in classifying bank transactions. Always respond with valid JSON only.",
-          },
-          { role: "user", content: prompt },
-        ],
+        max_tokens: 4096,
+        messages: [{ role: "user", content: prompt }],
+        system: "You are an expert financial assistant specialized in classifying bank transactions. Always respond with valid JSON only. No markdown, no explanation.",
         temperature: 0.1,
-        responseFormat: { type: "json_object" },
       });
 
-      const responseContent = response.choices[0]?.message?.content;
-      if (!responseContent || typeof responseContent !== "string") {
+      const textBlock = message.content.find((b): b is Anthropic.TextBlock => b.type === "text");
+      const responseContent = textBlock?.text || "";
+
+      if (!responseContent) {
         return { suggestedCategories: [], assignedTransactions: [] };
       }
 
       let parsed: { assigned?: any[]; new_categories?: any[] };
       try {
         parsed = JSON.parse(responseContent);
-        console.log("--- AI RESPONSE (MISTRAL) ---");
+        console.log("--- AI RESPONSE (ANTHROPIC) ---");
         console.log(JSON.stringify(parsed, null, 2));
-        console.log("------------------------------");
+        console.log("-------------------------------");
       } catch (e) {
-        console.error("Error parseando respuesta de Mistral:", e);
+        console.error("Error parseando respuesta de Anthropic:", e);
         return { suggestedCategories: [], assignedTransactions: [] };
       }
 
@@ -127,7 +122,7 @@ RESPONSE FORMAT (strict JSON) — use "idx" to identify transactions, NOT the co
         suggestedCategories: parsed.new_categories || [],
       };
     } catch (error: any) {
-      console.error("Error llamando a Mistral:", error?.message || error);
+      console.error("Error llamando a Anthropic:", error?.message || error);
       return { suggestedCategories: [], assignedTransactions: [] };
     }
   }
@@ -135,23 +130,30 @@ RESPONSE FORMAT (strict JSON) — use "idx" to identify transactions, NOT the co
   async testConnection() {
     if (!this.client) return { valid: false, error: "Cliente no inicializado. Verifica la API Key." };
     try {
-      await this.client.chat.complete({
-        model: this.config.model || "mistral-small-latest",
-        messages: [{ role: "user", content: "test" }],
-        maxTokens: 5,
+      await this.client.messages.create({
+        model: this.config.model || "claude-sonnet-4-20250514",
+        max_tokens: 10,
+        messages: [{ role: "user", content: "Responde OK" }],
       });
       return { valid: true };
     } catch (error: any) {
-      if (error?.status === 401) {
-        return { valid: false, error: "API Key inválida o expirada." };
+      const status = error?.status;
+      const msg = error?.message || "";
+      console.error("[Anthropic Test] Status:", status, "Message:", msg);
+
+      if (status === 401) {
+        return { valid: false, error: "API Key inválida. Verifica que sea correcta." };
       }
-      if (error?.status === 429) {
-        return { valid: false, error: "Límite de uso excedido. Verifica tu plan o créditos." };
+      if (status === 403) {
+        return { valid: false, error: "Acceso denegado. Tu API Key no tiene permisos suficientes." };
       }
-      if (error?.status === 404) {
-        return { valid: false, error: `Modelo "${this.config.model}" no encontrado.` };
+      if (status === 404) {
+        return { valid: false, error: `Modelo "${this.config.model || "claude-sonnet-4-20250514"}" no disponible. Prueba con otro modelo.` };
       }
-      return { valid: false, error: error?.message || "Error desconocido al conectar con Mistral." };
+      if (status === 429) {
+        return { valid: false, error: "Límite de peticiones excedido. Espera un momento e intenta de nuevo." };
+      }
+      return { valid: false, error: msg || "Error desconocido al conectar con Anthropic." };
     }
   }
 }

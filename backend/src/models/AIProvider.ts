@@ -5,7 +5,7 @@ const { Schema } = mongoose;
 const AIProviderSchema = new Schema({
   provider: {
     type: String,
-    enum: ["mistral", "openai"],
+    enum: ["mistral", "openai", "gemini", "anthropic"],
     required: true,
   },
   name: {

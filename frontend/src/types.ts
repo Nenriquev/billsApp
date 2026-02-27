@@ -102,7 +102,7 @@ export interface CategorySuggestion {
 
 export interface AIProvider {
   _id: string;
-  provider: "mistral" | "openai";
+  provider: "mistral" | "openai" | "gemini" | "anthropic";
   name: string;
   model?: string | null;
   enabled: boolean;

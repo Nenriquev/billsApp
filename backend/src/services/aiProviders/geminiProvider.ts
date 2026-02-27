@@ -1,18 +1,16 @@
-import { Mistral } from "@mistralai/mistralai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AIProvider, AIAnalysisResult, ProviderConfig } from "../../types/aiProvider";
 import { ITransaction, ICategory } from "../../types";
 
-export class MistralProvider implements AIProvider {
-  name = "Mistral";
-  private client: Mistral | null = null;
+export class GeminiProvider implements AIProvider {
+  name = "Gemini";
+  private client: GoogleGenerativeAI | null = null;
   private config: ProviderConfig;
 
   constructor(config: ProviderConfig) {
     this.config = config;
     if (config.apiKey) {
-      this.client = new Mistral({
-        apiKey: config.apiKey,
-      });
+      this.client = new GoogleGenerativeAI(config.apiKey);
     }
   }
 
@@ -21,7 +19,7 @@ export class MistralProvider implements AIProvider {
     existingCategories: ICategory[]
   ): Promise<AIAnalysisResult> {
     if (!this.client) {
-      console.warn("Mistral: Cliente no inicializado");
+      console.warn("Gemini: Cliente no inicializado");
       return { suggestedCategories: [], assignedTransactions: [] };
     }
 
@@ -92,33 +90,31 @@ RESPONSE FORMAT (strict JSON) — use "idx" to identify transactions, NOT the co
 }`;
 
     try {
-      const model = this.config.model || "mistral-small-latest";
-      const response = await this.client.chat.complete({
-        model,
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert financial assistant specialized in classifying bank transactions. Always respond with valid JSON only.",
-          },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.1,
-        responseFormat: { type: "json_object" },
+      const model = this.client.getGenerativeModel({
+        model: this.config.model || "gemini-2.5-flash",
       });
 
-      const responseContent = response.choices[0]?.message?.content;
-      if (!responseContent || typeof responseContent !== "string") {
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        systemInstruction: "You are an expert financial assistant specialized in classifying bank transactions. Always respond with valid JSON only. No markdown, no explanation.",
+        generationConfig: { temperature: 0.1 },
+      });
+
+      const responseContent = result.response.text();
+
+      if (!responseContent) {
         return { suggestedCategories: [], assignedTransactions: [] };
       }
 
       let parsed: { assigned?: any[]; new_categories?: any[] };
       try {
-        parsed = JSON.parse(responseContent);
-        console.log("--- AI RESPONSE (MISTRAL) ---");
+        const cleaned = responseContent.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+        parsed = JSON.parse(cleaned);
+        console.log("--- AI RESPONSE (GEMINI) ---");
         console.log(JSON.stringify(parsed, null, 2));
-        console.log("------------------------------");
+        console.log("----------------------------");
       } catch (e) {
-        console.error("Error parseando respuesta de Mistral:", e);
+        console.error("Error parseando respuesta de Gemini:", e);
         return { suggestedCategories: [], assignedTransactions: [] };
       }
 
@@ -127,7 +123,7 @@ RESPONSE FORMAT (strict JSON) — use "idx" to identify transactions, NOT the co
         suggestedCategories: parsed.new_categories || [],
       };
     } catch (error: any) {
-      console.error("Error llamando a Mistral:", error?.message || error);
+      console.error("Error llamando a Gemini:", error?.message || error);
       return { suggestedCategories: [], assignedTransactions: [] };
     }
   }
@@ -135,23 +131,29 @@ RESPONSE FORMAT (strict JSON) — use "idx" to identify transactions, NOT the co
   async testConnection() {
     if (!this.client) return { valid: false, error: "Cliente no inicializado. Verifica la API Key." };
     try {
-      await this.client.chat.complete({
-        model: this.config.model || "mistral-small-latest",
-        messages: [{ role: "user", content: "test" }],
-        maxTokens: 5,
+      const model = this.client.getGenerativeModel({
+        model: this.config.model || "gemini-2.5-flash",
       });
+      await model.generateContent("Responde OK");
       return { valid: true };
     } catch (error: any) {
-      if (error?.status === 401) {
-        return { valid: false, error: "API Key inválida o expirada." };
+      const msg = error?.message || "";
+      const status = error?.status || error?.httpStatusCode;
+      console.error("[Gemini Test] Status:", status, "Message:", msg);
+
+      if (status === 400 && msg.includes("API_KEY_INVALID")) {
+        return { valid: false, error: "API Key inválida. Verifica que sea correcta." };
       }
-      if (error?.status === 429) {
-        return { valid: false, error: "Límite de uso excedido. Verifica tu plan o créditos." };
+      if (status === 403) {
+        return { valid: false, error: "Acceso denegado. Verifica que la API 'Generative Language' esté habilitada en tu proyecto de Google Cloud." };
       }
-      if (error?.status === 404) {
-        return { valid: false, error: `Modelo "${this.config.model}" no encontrado.` };
+      if (status === 404 || msg.includes("not found")) {
+        return { valid: false, error: `Modelo "${this.config.model || "gemini-2.5-flash"}" no disponible. Prueba con otro modelo.` };
       }
-      return { valid: false, error: error?.message || "Error desconocido al conectar con Mistral." };
+      if (status === 429) {
+        return { valid: false, error: "Límite de peticiones excedido. Espera un momento e intenta de nuevo." };
+      }
+      return { valid: false, error: msg || "Error desconocido al conectar con Gemini." };
     }
   }
 }

@@ -109,6 +109,14 @@ const Upload = () => {
     }
   };
 
+  const handleDeleteTransaction = (txId: string) => {
+    setTransactions(prev => prev.filter(t => t.tempId !== txId));
+  };
+
+  const handleDeleteAllUnassigned = () => {
+    setTransactions(prev => prev.filter(t => t.category || t.suggestedCategory));
+  };
+
   const handleRemoveFromSuggestion = (suggestionIdx: number, txId: string) => {
     const newSuggestions = [...suggestions];
     const suggestion = { ...newSuggestions[suggestionIdx] };
@@ -502,21 +510,40 @@ const Upload = () => {
 
                   {/* Bloque de Transacciones Sin Asignar */}
                   {unassignedTransactions.length > 0 && (
-                    <SuggestionBlock style={{ borderColor: 'var(--border)', opacity: 0.7 }}>
+                    <SuggestionBlock style={{ borderColor: 'var(--border)' }}>
                       <div className="block-header" style={{ background: '#f8fafc' }}>
                         <div className="title-group">
                           <h3 style={{ color: 'var(--text-secondary)' }}>Sin asignar (Otros)</h3>
+                          <button
+                            className="badge"
+                            style={{ cursor: 'pointer', background: 'var(--danger, #ef4444)', color: '#fff', border: 'none' }}
+                            onClick={handleDeleteAllUnassigned}
+                          >
+                            <IconTrash size={14} /> Eliminar todos
+                          </button>
                         </div>
-                        <span className="desc">Movimientos no clasificados</span>
+                        <span className="desc">Movimientos no clasificados — elimínalos si no quieres guardarlos</span>
                       </div>
                       <TransactionTable>
+                        <thead>
+                          <tr>
+                            <th>Concepto</th>
+                            <th>Fecha</th>
+                            <th style={{ textAlign: 'right' }}>Valor</th>
+                            <th></th>
+                          </tr>
+                        </thead>
                         <tbody>
                           {unassignedTransactions.map(tx => (
                             <tr key={tx.tempId}>
                               <td className="concept">{tx.concept}</td>
                               <td className="date">{formatDate(tx.date)}</td>
                               <td className="amount">{formatCurrency(tx.value)}</td>
-                              <td></td>
+                              <td className="actions">
+                                <button onClick={() => handleDeleteTransaction(tx.tempId!)} title="Eliminar transacción">
+                                  <IconTrash size={18} />
+                                </button>
+                              </td>
                             </tr>
                           ))}
                         </tbody>

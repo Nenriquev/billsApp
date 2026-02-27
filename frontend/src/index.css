@@ -26,8 +26,16 @@
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
 
-  --radius: 12px;
   --radius-sm: 8px;
+  --radius: 12px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  --bg-main: #f8fafc;
+  --bg-body: #f8fafc;
+
+  --accent-rgb: 99, 102, 241;
 }
 
 *, *::before, *::after {
