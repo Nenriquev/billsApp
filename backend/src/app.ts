@@ -16,7 +16,11 @@ dotenv.config();
 const app = express();
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(",") || ["http://localhost:5173"];
 
-app.use(cors({ origin: ALLOWED_ORIGINS }));
+app.use(cors({
+  origin: ALLOWED_ORIGINS,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
