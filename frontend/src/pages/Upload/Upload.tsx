@@ -39,9 +39,6 @@ const StepProgress = ({ currentStep }: { currentStep: Step }) => {
   ];
 
   const currentIdx = steps.findIndex(s => s.key === currentStep);
-  const loadingIdx = steps.findIndex(s => s.key === 'LOADING');
-  const reviewIdx = steps.findIndex(s => s.key === 'REVIEW');
-  const successIdx = steps.findIndex(s => s.key === 'SUCCESS');
 
   return (
     <StepProgressContainer>
@@ -72,7 +69,7 @@ const Upload = () => {
   const [bank, setBank] = useState<DropdownOption | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Review Data States
@@ -277,8 +274,9 @@ const Upload = () => {
       const transactionsToSave = transactions.map(tx => {
         const cleanedTx = { ...tx };
         
-        const suggestion = suggestions.find(s => s.tempIds?.includes(tx.tempId));
-        const existingCategory = categories.find(c => c.category === suggestion?.category);
+        const suggestion = suggestions.find(s => !!(tx.tempId && s.tempIds?.includes(tx.tempId)));
+        const categoryName = suggestion?.category;
+        const existingCategory = categoryName ? categories.find(c => c.category === categoryName) : undefined;
         const gRest = existingCategory?.subcategories.find(s => s.name?.toLowerCase() && restaurantAliases.includes(s.name.toLowerCase()))?.name;
         const gBar = existingCategory?.subcategories.find(s => s.name?.toLowerCase() && barAliases.includes(s.name.toLowerCase()))?.name;
         

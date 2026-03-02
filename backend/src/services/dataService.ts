@@ -11,6 +11,7 @@ export async function createTransaction(userId: string, data: Partial<ITransacti
   const transaction = new Data({
     ...data,
     user: userId,
+    uploadDate: data.uploadDate || new Date(),
   });
   await transaction.save();
   return transaction.populate("category");

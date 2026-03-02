@@ -5,6 +5,7 @@ const { Schema } = mongoose;
 const DataSchema = new Schema({
   concept: String,
   date: Date,
+  uploadDate: Date,
   value: Number,
   category: {
     type: Schema.Types.ObjectId,

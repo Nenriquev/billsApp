@@ -23,6 +23,7 @@ export interface Transaction {
   category?: Category | null;
   bank: string;
   subcategory?: string | null;
+  uploadDate?: string;
 }
 
 export interface ChartDataset {

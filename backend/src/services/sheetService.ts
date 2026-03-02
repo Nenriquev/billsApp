@@ -154,7 +154,7 @@ export async function saveTransactions(transactions: ITransaction[], userId: str
     return {
       updateOne: {
         filter: { concept: cleanedTx.concept, date: cleanedTx.date, value: cleanedTx.value, user: userId },
-        update: { $setOnInsert: { ...cleanedTx, user: userId } },
+        update: { $setOnInsert: { ...cleanedTx, user: userId, uploadDate: new Date() } },
         upsert: true,
       },
     };

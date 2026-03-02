@@ -15,8 +15,6 @@ import Dropdown from "./Dropdown";
 import {
   IconPlus,
   IconTrash,
-  IconCheck,
-  IconX,
   IconTestPipe,
   IconToggleLeft,
   IconToggleRight,

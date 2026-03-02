@@ -7,6 +7,7 @@ export interface ITransaction {
   category: Types.ObjectId | string | null;
   bank: string;
   subcategory?: string | null;
+  uploadDate?: Date;
 }
 
 export interface ICategoryType {

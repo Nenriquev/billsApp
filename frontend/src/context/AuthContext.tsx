@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const storedToken = localStorage.getItem("token");
     if (storedToken) {
       try {
-        const decoded: any = jwtDecode(storedToken);
+        jwtDecode(storedToken);
         // We could also fetch the full profile here if needed
         // For now, we restore basic info from token if present, or just rely on the stored token
         // Wait, the token usually contains ID. We might need to fetch the profile.
@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
              logout();
            })
            .finally(() => setIsLoading(false));
-      } catch (e) {
+      } catch (_e) {
         logout();
         setIsLoading(false);
       }

@@ -17,7 +17,8 @@ function DonutChart({ data }: DonutChartProps) {
         chartInstance.current = echarts.init(ref.current);
     }
     
-    const chart = chartInstance.current;
+    // The 'chart' variable here was unused, as 'updateOptions' declares its own 'chart'
+    // Removed: const chart = chartInstance.current;
     const updateOptions = () => {
       if (!ref.current || !chartInstance.current) return;
       const chart = chartInstance.current;

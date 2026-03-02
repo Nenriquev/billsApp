@@ -1,7 +1,10 @@
-import { InputHTMLAttributes } from "react";
+import { InputHTMLAttributes, ReactNode } from "react";
 import styled from "styled-components";
 
-const Wrapper = styled.div`
+const Wrapper = styled.div<{ $hasIcon: boolean }>`
+  position: relative;
+  width: 100%;
+
   input::-webkit-outer-spin-button,
   input::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -13,6 +16,7 @@ const Wrapper = styled.div`
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 10px 12px;
+    padding-left: ${(props) => (props.$hasIcon ? "36px" : "12px")};
     width: 100%;
     font-size: 0.88rem;
     font-family: inherit;
@@ -28,10 +32,31 @@ const Wrapper = styled.div`
       box-shadow: 0 0 0 3px var(--accent-light);
     }
   }
+
+  .icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
 `;
 
-const Input = (props: InputHTMLAttributes<HTMLInputElement>) => (
-  <Wrapper>
+interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  icon?: ReactNode;
+}
+
+const Input = ({ icon, ...props }: InputProps) => (
+  <Wrapper $hasIcon={!!icon}>
+    {icon && <div className="icon">{icon}</div>}
     <input {...props} />
   </Wrapper>
 );

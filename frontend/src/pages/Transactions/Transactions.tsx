@@ -12,7 +12,9 @@ import { fetchTransactions, fetchCategories } from "../../redux/thunks/dataThunk
 import { formatDate, formatCurrency } from "../../utils/format";
 import { Transaction } from "../../types";
 import { ColumnDef } from "@tanstack/react-table";
-import { IconReceiptOff, IconPlus } from "@tabler/icons-react";
+import { IconReceiptOff, IconPlus, IconFilterX, IconX, IconSearch } from "@tabler/icons-react";
+import MultiSelectDropdown from "../../components/MultiSelectDropdown";
+import DateRangePicker from "../../components/DateRangePicker";
 
 const Page = styled.div`
   height: 100%;
@@ -33,12 +35,105 @@ const Page = styled.div`
     flex-wrap: wrap;
 
     h1 { font-size: 1.6rem; }
-    .search { width: 280px; }
   }
 
   .table_container {
     flex: 1;
     min-height: 0;
+  }
+`;
+
+const ActiveFilters = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border);
+
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: var(--accent-light);
+    color: var(--accent);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    
+    .remove {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: 0.2s;
+      
+      &:hover {
+        opacity: 1;
+        color: var(--danger);
+      }
+      
+      svg {
+        width: 14px;
+        height: 14px;
+        stroke-width: 3;
+      }
+    }
+  }
+`;
+
+const FiltersBar = styled.div`
+  display: flex;
+  gap: 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  background: var(--bg-card);
+  padding: 24px;
+  border-radius: var(--radius-lg, 16px);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-width: 180px;
+    max-width: 300px;
+    
+    label {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+  }
+
+  .reset-btn {
+    padding: 0 18px;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    
+    &:hover {
+      background: var(--danger-light, #fee2e2);
+      color: var(--danger, #ef4444);
+      border-color: transparent;
+    }
   }
 `;
 
@@ -112,8 +207,13 @@ const Transactions = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [filter, setFilter] = useState("");
-  const { transactions, loading, selectedTransaction } = useAppSelector((s) => ({
+  const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
+  const [startDate, endDate] = dateRange;
+
+  const { transactions, categories, loading, selectedTransaction } = useAppSelector((s) => ({
     transactions: s.data.transactions,
+    categories: s.data.categories,
     loading: s.data.loading.transactions,
     selectedTransaction: s.data.selectedTransaction,
   }));
@@ -160,12 +260,35 @@ const Transactions = () => {
   }, [dispatch]);
 
   const filteredData = useMemo(() => {
-    if (!filter) return transactions;
-    const lower = filter.toLowerCase();
-    return transactions.filter((item) =>
-      Object.values(item).some((val) => String(val).toLowerCase().includes(lower))
-    );
-  }, [filter, transactions]);
+    let result = transactions;
+
+    if (categoryFilters.length > 0) {
+      result = result.filter((item) => {
+        if (!item.category) return categoryFilters.includes("unassigned");
+        return categoryFilters.includes(item.category._id);
+      });
+    }
+
+    if (startDate) {
+      result = result.filter((item) => new Date(item.date).getTime() >= startDate.getTime());
+    }
+    
+    if (endDate) {
+      const to = new Date(endDate);
+      to.setHours(23, 59, 59, 999);
+      result = result.filter((item) => new Date(item.date).getTime() <= to.getTime());
+    }
+
+    if (filter) {
+      const lower = filter.toLowerCase();
+      result = result.filter((item) =>
+        Object.values(item).some((val) => val && String(val).toLowerCase().includes(lower)) || 
+        (item.category && item.category.category.toLowerCase().includes(lower))
+      );
+    }
+    
+    return result;
+  }, [filter, categoryFilters, startDate, endDate, transactions]);
 
   const handleOpenModal = (element: Transaction) => {
     dispatch(setModal({ transaction: true }));
@@ -187,15 +310,89 @@ const Transactions = () => {
           }}>
             <IconPlus /> Nuevo gasto
           </PrimaryBtn>
-          <div className="search">
-            <Input
-              onChange={(e) => setFilter(e.target.value)}
-              placeholder="Buscar..."
-              value={filter}
-            />
-          </div>
         </div>
       </div>
+
+      <FiltersBar>
+        <div className="filter-group" style={{ minWidth: '220px' }}>
+          <label>Buscar</label>
+          <Input
+            icon={<IconSearch size={18} />}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Concepto, banco, etc..."
+            value={filter}
+          />
+        </div>
+
+        <div className="filter-group">
+          <label>Categorías</label>
+          <MultiSelectDropdown 
+            options={[
+              { name: "Sin categoría", value: "unassigned" },
+              ...categories.map((cat) => ({ name: cat.category, value: cat._id }))
+            ]}
+            selectedOptions={categoryFilters}
+            handleSelect={(opts) => setCategoryFilters(opts as string[])}
+            placeholder="Seleccionar..."
+          />
+        </div>
+        
+        <div className="filter-group" style={{ minWidth: '260px' }}>
+          <label>Rango de Fechas (Transacción)</label>
+          <DateRangePicker 
+            startDate={startDate}
+            endDate={endDate}
+            onChange={(update) => setDateRange(update)}
+            placeholder="Selecciona inicio y fin"
+          />
+        </div>
+
+        {(categoryFilters.length > 0 || startDate || endDate || filter) && (
+          <button 
+            className="reset-btn" 
+            onClick={() => {
+              setFilter("");
+              setCategoryFilters([]);
+              setDateRange([null, null]);
+            }}
+          >
+            <IconFilterX size={18} /> Limpiar Filtros
+          </button>
+        )}
+        {(categoryFilters.length > 0 || startDate || endDate || filter) && (
+          <ActiveFilters>
+            {startDate && endDate && (
+              <div className="chip">
+                Rango: {formatDate(startDate.toISOString())} - {formatDate(endDate.toISOString())}
+                <div className="remove" onClick={() => setDateRange([null, null])}>
+                  <IconX />
+                </div>
+              </div>
+            )}
+            
+            {categoryFilters.map((id) => {
+              const catName = id === "unassigned" ? "Sin categoría" : categories.find(c => c._id === id)?.category;
+              return (
+                <div key={id} className="chip">
+                  {catName}
+                  <div className="remove" onClick={() => setCategoryFilters(prev => prev.filter(c => c !== id))}>
+                    <IconX />
+                  </div>
+                </div>
+              );
+            })}
+
+            {filter && (
+              <div className="chip">
+                Búsqueda: "{filter}"
+                <div className="remove" onClick={() => setFilter("")}>
+                  <IconX />
+                </div>
+              </div>
+            )}
+          </ActiveFilters>
+        )}
+      </FiltersBar>
 
       <div className="table_container">
         {transactions.length === 0 ? (
@@ -216,6 +413,7 @@ const Transactions = () => {
             data={filteredData}
             columns={columns as ColumnDef<Transaction, unknown>[]}
             onRowClick={(el) => handleOpenModal(el as Transaction)}
+            defaultSorting={[{ id: "date", desc: true }]}
           />
         )}
       </div>
