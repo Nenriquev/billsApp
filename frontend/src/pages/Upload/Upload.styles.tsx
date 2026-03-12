@@ -589,6 +589,14 @@ export const LoadingOverlay = styled.div`
     text-align: center;
     max-width: 250px;
   }
+
+  .loading-text-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
 `;
 
 export const AIBadge = styled.div`

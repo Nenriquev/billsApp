@@ -9,6 +9,7 @@ import dashboardRouter from "./routes/dashboardRoutes";
 import categoryRouter from "./routes/categoryRoutes";
 import aiProviderRouter from "./routes/aiProviderRoutes";
 import authRouter from "./routes/authRoutes";
+import cronRouter from "./routes/cronRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 
 dotenv.config();
@@ -57,19 +58,21 @@ app.use("/api/sheets", sheetRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/categories", categoryRouter);
 app.use("/api/ai-providers", aiProviderRouter);
+app.use("/api/cron", cronRouter);
 
 app.use(errorHandler);
 
 /* ── Local dev: listen + cron ── */
 if (process.env.NODE_ENV !== "production") {
-  const PORT = process.env.PORT || 3000;
+  const initialPort = Number(process.env.PORT) || 3000;
 
-  connectDB()
-    .then(() => {
-      app.listen(PORT, () => {
-        console.log(`[Server] Escuchando en puerto ${PORT}`);
-      });
+  const startServer = (port: number) => {
+    const server = app.listen(port);
 
+    server.on("listening", () => {
+      console.log(`[Server] Escuchando en puerto ${port}`);
+
+      // Cargar cron después de que el servidor esté listo
       import("node-cron").then(({ default: cron }) => {
         const { sendMail } = require("./utils/sendMail");
         cron.schedule("0 9 1 * *", () => {
@@ -77,6 +80,21 @@ if (process.env.NODE_ENV !== "production") {
           sendMail();
         });
       });
+    });
+
+    server.on("error", (err: any) => {
+      if (err.code === "EADDRINUSE") {
+        console.log(`[Server] Puerto ${port} ocupado, probando con ${port + 1}...`);
+        startServer(port + 1);
+      } else {
+        console.error("[Server] Error inesperado:", err);
+      }
+    });
+  };
+
+  connectDB()
+    .then(() => {
+      startServer(initialPort);
     })
     .catch((err) => {
       console.error("[DB] Error al conectar:", err.message);

@@ -188,7 +188,7 @@ const ProviderCard = styled.div`
     .toggle-field {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
       padding: 8px 0;
 
       label {
@@ -635,7 +635,7 @@ const AIProvidersConfig = () => {
                   <input type="text" value={provider.model || "Por defecto"} disabled />
                 </div>
                 <div className="toggle-field">
-                  <label>Habilitado</label>
+                  
                   <button
                     className={provider.enabled ? "enabled" : ""}
                     onClick={() => handleToggleEnabled(provider)}

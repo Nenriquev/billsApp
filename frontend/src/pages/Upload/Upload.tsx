@@ -431,8 +431,8 @@ const Upload = () => {
                 <div className="loader-orbit">
                   <Loader />
                 </div>
-                <div>
-                  <span>Clasificando con IA</span>
+                <div className="loading-text-container">
+                  <span>Procesando transacciones...</span>
                   <p className="subtitle">Estamos identificando patrones y categorías en tus movimientos bancarios.</p>
                 </div>
               </LoadingOverlay>

@@ -22,5 +22,11 @@
       "src": "/(.*)",
       "dest": "/src/app.ts"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/monthly-reminder",
+      "schedule": "0 9 1 * *"
+    }
   ]
 }
