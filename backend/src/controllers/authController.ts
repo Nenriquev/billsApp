@@ -58,6 +58,7 @@ export const login = async (req: Request, res: Response) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        notificationsEnabled: user.notificationsEnabled,
         createdAt: user.createdAt
       },
     });
@@ -115,3 +116,25 @@ export const updatePassword = async (req: any, res: Response) => {
         res.status(500).json({ message: "Error al actualizar la contraseña" });
     }
 }
+
+export const updateNotifications = async (req: any, res: Response) => {
+  try {
+    const { notificationsEnabled } = req.body;
+
+    if (typeof notificationsEnabled !== "boolean") {
+      return res.status(400).json({ message: "notificationsEnabled debe ser un booleano" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { notificationsEnabled },
+      { new: true }
+    ).select("-password");
+
+    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Error al actualizar las notificaciones" });
+  }
+};

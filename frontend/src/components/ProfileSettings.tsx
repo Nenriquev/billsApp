@@ -1,6 +1,6 @@
 import { useState } from "react";
 import styled from "styled-components";
-import { IconUser, IconLock, IconCheck, IconAlertCircle, IconMail, IconEdit } from "@tabler/icons-react";
+import { IconUser, IconLock, IconCheck, IconAlertCircle, IconMail, IconEdit, IconBell } from "@tabler/icons-react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../axios/axios";
 
@@ -204,6 +204,67 @@ const Feedback = styled.div<{ $type: "success" | "error" }>`
       : `background: var(--danger-light); color: var(--danger);`}
 `;
 
+const ToggleRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: var(--border-light);
+  border-radius: var(--radius-sm);
+  gap: 16px;
+
+  .toggle-info {
+    flex: 1;
+    min-width: 0;
+
+    .toggle-title {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toggle-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+  }
+`;
+
+const ToggleSwitch = styled.button<{ $checked: boolean }>`
+  position: relative;
+  width: 48px;
+  height: 26px;
+  border-radius: 13px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.25s;
+  flex-shrink: 0;
+  background: ${(p) => (p.$checked ? "var(--accent)" : "var(--border)")};
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: ${(p) => (p.$checked ? "25px" : "3px")};
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    transition: left 0.25s;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
 /* ────── Component ────── */
 
 const ProfileSettings = () => {
@@ -218,6 +279,10 @@ const ProfileSettings = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
   const [pwFeedback, setPwFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  const [notifEnabled, setNotifEnabled] = useState(user?.notificationsEnabled ?? true);
+  const [savingNotif, setSavingNotif] = useState(false);
+  const [notifFeedback, setNotifFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   const handleSaveName = async () => {
     if (!name.trim() || name.trim() === user?.name) return;
@@ -284,6 +349,32 @@ const ProfileSettings = () => {
     .join("")
     .toUpperCase()
     .slice(0, 2);
+
+  const handleToggleNotifications = async () => {
+    const newValue = !notifEnabled;
+    setSavingNotif(true);
+    setNotifFeedback(null);
+
+    try {
+      await api.put("/auth/notifications", { notificationsEnabled: newValue });
+      setNotifEnabled(newValue);
+      updateUser({ notificationsEnabled: newValue });
+      setNotifFeedback({
+        type: "success",
+        msg: newValue
+          ? "Notificaciones activadas"
+          : "Notificaciones desactivadas",
+      });
+    } catch (err: any) {
+      setNotifFeedback({
+        type: "error",
+        msg: err.response?.data?.message || "Error al actualizar las notificaciones",
+      });
+    } finally {
+      setSavingNotif(false);
+      setTimeout(() => setNotifFeedback(null), 3000);
+    }
+  };
 
   return (
     <Container>
@@ -394,6 +485,41 @@ const ProfileSettings = () => {
             <IconLock />
             {savingPassword ? "Cambiando..." : "Cambiar contraseña"}
           </Btn>
+        </SectionBody>
+      </SectionCard>
+
+      {/* ── Notifications ── */}
+      <SectionCard style={{ gridColumn: "1 / -1" }}>
+        <SectionHeader>
+          <div className="header-icon"><IconBell /></div>
+          Notificaciones
+        </SectionHeader>
+        <SectionBody>
+          <ToggleRow>
+            <div className="toggle-info">
+              <div className="toggle-title">
+                <IconMail size={16} />
+                Recordatorio mensual por email
+              </div>
+              <div className="toggle-desc">
+                Recibe un correo el día 1 de cada mes recordándote subir los extractos bancarios.
+                El correo se enviará a <strong>{user?.email}</strong>.
+              </div>
+            </div>
+            <ToggleSwitch
+              $checked={notifEnabled}
+              onClick={handleToggleNotifications}
+              disabled={savingNotif}
+              aria-label="Toggle notificaciones"
+            />
+          </ToggleRow>
+
+          {notifFeedback && (
+            <Feedback $type={notifFeedback.type}>
+              {notifFeedback.type === "success" ? <IconCheck /> : <IconAlertCircle />}
+              {notifFeedback.msg}
+            </Feedback>
+          )}
         </SectionBody>
       </SectionCard>
     </Container>
